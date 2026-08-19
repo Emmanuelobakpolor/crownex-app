@@ -1,0 +1,952 @@
+import 'dart:math';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutterwave_standard/flutterwave.dart';
+
+import '../services/api_exception.dart';
+import '../services/wallet_service.dart';
+import '../theme/app_colors.dart';
+import '../widgets/auth_widgets.dart';
+
+/// Deposit NGN into the wallet via the Flutterwave standard checkout.
+///
+/// Flow: enter amount → POST /wallet/initiate-deposit/ for a public key →
+/// launch the Flutterwave SDK → on SDK success, POST /wallet/verify-payment/
+/// (the SDK result alone never credits the wallet — only a verified server
+/// call does) → show the new balance.
+class DepositNgnScreen extends StatefulWidget {
+  const DepositNgnScreen({super.key});
+
+  static const _appPrefix = 'CROWNEX';
+
+  @override
+  State<DepositNgnScreen> createState() => _DepositNgnScreenState();
+}
+
+class _DepositNgnScreenState extends State<DepositNgnScreen> {
+  final _amountController = TextEditingController();
+  final _amountFocus = FocusNode();
+  final _wallet = WalletService.instance;
+  final _random = Random.secure();
+
+  bool _submitting = false;
+  String? _loadingLabel;
+
+  static const _quickAmounts = [500, 1000, 2000, 5000, 10000, 20000];
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _amountFocus.dispose();
+    super.dispose();
+  }
+
+  double? get _amount {
+    final raw = _amountController.text.replaceAll(',', '').trim();
+    if (raw.isEmpty) return null;
+    return double.tryParse(raw);
+  }
+
+  bool get _canPay {
+    final amount = _amount;
+    return amount != null && amount >= 100 && !_submitting;
+  }
+
+  String? get _amountHint {
+    final amount = _amount;
+    if (amount == null) return null;
+    if (amount < 100) return 'Minimum deposit is ₦100';
+    return null;
+  }
+
+  void _selectQuickAmount(int value) {
+    _amountController.text = value.toString();
+    setState(() {});
+    _amountFocus.unfocus();
+  }
+
+  String _generateTxRef() {
+    final millis = DateTime.now().millisecondsSinceEpoch;
+    final suffix = (_random.nextInt(900000) + 100000).toString();
+    return '${DepositNgnScreen._appPrefix}-$millis-$suffix';
+  }
+
+  Future<void> _pay() async {
+    if (!_canPay) return;
+    final amount = _amount!;
+
+    setState(() {
+      _submitting = true;
+      _loadingLabel = 'Preparing payment…';
+    });
+
+    try {
+      final txRef = _generateTxRef();
+      final init = await _wallet.initiateDeposit(amount: amount, txRef: txRef);
+
+      if (!mounted) return;
+      setState(() => _loadingLabel = null);
+
+      final isTestMode = init.publicKey.contains('TEST');
+      final flutterwave = Flutterwave(
+        publicKey: init.publicKey,
+        currency: 'NGN',
+        redirectUrl: 'https://flutterwave.com',
+        txRef: init.txRef,
+        amount: init.amount.toStringAsFixed(2),
+        customer: Customer(
+          name: init.customerName,
+          phoneNumber: init.customerPhone,
+          email: init.customerEmail,
+        ),
+        paymentOptions: 'card,banktransfer,ussd',
+        customization: Customization(
+          title: 'CrownEx Top-Up',
+          description: 'Add money to wallet',
+        ),
+        isTestMode: isTestMode,
+      );
+
+      final response = await flutterwave.charge(context);
+      if (!mounted) return;
+
+      if (response.success != true) {
+        // The SDK result alone never touches a transaction record — only a
+        // verify-payment call does. Without this, a cancelled/failed charge
+        // leaves its transaction stuck as "Pending" forever instead of
+        // resolving to "Failed", so we still ask the server to check.
+        try {
+          await _wallet.verifyPayment(init.txRef);
+        } catch (_) {
+          // Expected: verification fails for a cancelled/failed charge,
+          // which is what flips the transaction to Failed server-side.
+        }
+
+        if (!mounted) return;
+        setState(() {
+          _submitting = false;
+          _loadingLabel = null;
+        });
+        _showSnack(
+          response.status == 'cancelled'
+              ? 'Payment cancelled.'
+              : 'Payment failed. Please try again.',
+        );
+        return;
+      }
+
+      setState(() => _loadingLabel = 'Verifying payment…');
+      final newBalance = await _wallet.verifyPayment(init.txRef);
+
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _loadingLabel = null;
+      });
+      await _showSuccessDialog(amount: amount, newBalance: newBalance);
+      if (mounted) Navigator.of(context).pop(true);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _loadingLabel = null;
+      });
+      _showSnack(e.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _loadingLabel = null;
+      });
+      _showSnack('Something went wrong. Please try again.');
+    }
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      ),
+    );
+  }
+
+  Future<void> _showSuccessDialog({
+    required double amount,
+    required double newBalance,
+  }) {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _DepositSuccessDialog(
+        amount: amount,
+        newBalance: newBalance,
+        onDone: () => Navigator.of(ctx).pop(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
+    final amount = _amount;
+    final amountHint = _amountHint;
+    final selectedQuick = amount != null &&
+            amount == amount.roundToDouble() &&
+            _quickAmounts.contains(amount.round())
+        ? amount.round()
+        : null;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  const _DepositHeader(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _AmountCard(
+                            controller: _amountController,
+                            focusNode: _amountFocus,
+                            amountHint: amountHint,
+                            onChanged: (_) => setState(() {}),
+                          ),
+                          const SizedBox(height: 16),
+                          _QuickAmountRow(
+                            amounts: _quickAmounts,
+                            selected: selectedQuick,
+                            onSelected: _selectQuickAmount,
+                          ),
+                          const SizedBox(height: 28),
+                          const _SectionLabel('Payment methods'),
+                          const SizedBox(height: 12),
+                          const _PaymentMethodsGrid(),
+                          const SizedBox(height: 20),
+                          const _SecureInfoBanner(),
+                        ],
+                      ),
+                    ),
+                  ),
+                  _BottomBar(
+                    bottomPad: bottomPad,
+                    canPay: _canPay,
+                    submitting: _submitting && _loadingLabel != null,
+                    amount: amount,
+                    onPay: _pay,
+                  ),
+                ],
+              ),
+              if (_loadingLabel != null)
+                _LoadingOverlay(label: _loadingLabel!),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Header ─────────────────────────────────────────────────────────────────
+
+class _DepositHeader extends StatelessWidget {
+  const _DepositHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: SizedBox(
+        height: 48,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: AuthBackButton(
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+            const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Add Money',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Fund your NGN wallet',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Amount card ────────────────────────────────────────────────────────────
+
+class _AmountCard extends StatelessWidget {
+  const _AmountCard({
+    required this.controller,
+    required this.focusNode,
+    required this.onChanged,
+    this.amountHint,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final ValueChanged<String> onChanged;
+  final String? amountHint;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 22),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.account_balance_wallet_outlined,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
+                SizedBox(width: 6),
+                Text(
+                  'Deposit amount',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          TextField(
+            controller: controller,
+            focusNode: focusNode,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+            ],
+            onChanged: onChanged,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 40,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+              letterSpacing: -1.2,
+              height: 1.1,
+            ),
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              filled: false,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              hintText: '0',
+              hintStyle: TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textMuted.withValues(alpha: 0.45),
+                letterSpacing: -1.2,
+              ),
+              prefixIcon: const Padding(
+                padding: EdgeInsets.only(right: 4, top: 6),
+                child: Text(
+                  '₦',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 0,
+                minHeight: 0,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: Text(
+              amountHint ?? 'Minimum ₦100 · Instant credit',
+              key: ValueKey(amountHint ?? 'default'),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: amountHint != null
+                    ? const Color(0xFFDC2626)
+                    : AppColors.textMuted,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Quick amounts ──────────────────────────────────────────────────────────
+
+class _QuickAmountRow extends StatelessWidget {
+  const _QuickAmountRow({
+    required this.amounts,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final List<int> amounts;
+  final int? selected;
+  final ValueChanged<int> onSelected;
+
+  String _label(int value) {
+    if (value >= 1000) {
+      final k = value / 1000;
+      return k == k.roundToDouble()
+          ? '₦${k.toInt()}k'
+          : '₦${k.toStringAsFixed(1)}k';
+    }
+    return '₦$value';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: amounts.map((amount) {
+        final isSelected = selected == amount;
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => onSelected(amount),
+            borderRadius: BorderRadius.circular(12),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.border,
+                  width: 1.2,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.22),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Text(
+                _label(amount),
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// ─── Section label ──────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+        letterSpacing: -0.2,
+      ),
+    );
+  }
+}
+
+// ─── Payment methods ────────────────────────────────────────────────────────
+
+class _PaymentMethodsGrid extends StatelessWidget {
+  const _PaymentMethodsGrid();
+
+  static const _methods = [
+    (
+      Icons.credit_card_rounded,
+      'Card',
+      'Debit & credit',
+      Color(0xFFEEF3FF),
+      Color(0xFF0052FF),
+    ),
+    (
+      Icons.account_balance_rounded,
+      'Transfer',
+      'Any bank',
+      Color(0xFFF0FDF4),
+      Color(0xFF16A34A),
+    ),
+    (
+      Icons.dialpad_rounded,
+      'USSD',
+      'Bank code',
+      Color(0xFFFFF7ED),
+      Color(0xFFEA580C),
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (var i = 0; i < _methods.length; i++) ...[
+          if (i > 0) const SizedBox(width: 10),
+          Expanded(
+            child: _PaymentMethodTile(
+              icon: _methods[i].$1,
+              title: _methods[i].$2,
+              subtitle: _methods[i].$3,
+              bg: _methods[i].$4,
+              accent: _methods[i].$5,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _PaymentMethodTile extends StatelessWidget {
+  const _PaymentMethodTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.bg,
+    required this.accent,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color bg;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.9)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 20, color: accent),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Secure banner ──────────────────────────────────────────────────────────
+
+class _SecureInfoBanner extends StatelessWidget {
+  const _SecureInfoBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F7FF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFD6E6FF)),
+      ),
+      child: const Row(
+        children: [
+          Icon(
+            Icons.verified_user_outlined,
+            size: 18,
+            color: AppColors.primary,
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Payments are processed securely via Flutterwave. Your wallet is credited after verification.',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF3B5B9A),
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Bottom bar ─────────────────────────────────────────────────────────────
+
+class _BottomBar extends StatelessWidget {
+  const _BottomBar({
+    required this.bottomPad,
+    required this.canPay,
+    required this.submitting,
+    required this.amount,
+    required this.onPay,
+  });
+
+  final double bottomPad;
+  final bool canPay;
+  final bool submitting;
+  final double? amount;
+  final VoidCallback onPay;
+
+  String _format(double v) {
+    final s = v.toStringAsFixed(v.truncateToDouble() == v ? 0 : 2);
+    final parts = s.split('.');
+    final whole = parts[0];
+    final buf = StringBuffer();
+    for (var i = 0; i < whole.length; i++) {
+      if (i > 0 && (whole.length - i) % 3 == 0) buf.write(',');
+      buf.write(whole[i]);
+    }
+    if (parts.length > 1) return '${buf.toString()}.${parts[1]}';
+    return buf.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = amount != null && canPay
+        ? 'Continue · ₦${_format(amount!)}'
+        : 'Continue to payment';
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 12 + bottomPad),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          top: BorderSide(color: AppColors.border.withValues(alpha: 0.8)),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AuthPrimaryButton(
+            label: label,
+            enabled: canPay,
+            loading: submitting,
+            onPressed: onPay,
+          ),
+          const SizedBox(height: 10),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.lock_outline_rounded, size: 13, color: AppColors.textMuted),
+              SizedBox(width: 5),
+              Text(
+                'Secured by Flutterwave',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Loading overlay ────────────────────────────────────────────────────────
+
+class _LoadingOverlay extends StatelessWidget {
+  const _LoadingOverlay({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: ColoredBox(
+        color: Colors.black.withValues(alpha: 0.4),
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 40),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 26),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.8,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Please don’t close this screen',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Success dialog ─────────────────────────────────────────────────────────
+
+class _DepositSuccessDialog extends StatelessWidget {
+  const _DepositSuccessDialog({
+    required this.amount,
+    required this.newBalance,
+    required this.onDone,
+  });
+
+  final double amount;
+  final double newBalance;
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 32, 24, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: const Color(0xFFDCFCE7),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF16A34A).withValues(alpha: 0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                color: Color(0xFF16A34A),
+                size: 38,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Deposit successful',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '₦${_format(amount)} has been added to your wallet.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14.5,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    'New balance',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '₦${_format(newBalance)}',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            AuthPrimaryButton(label: 'Done', onPressed: onDone),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _format(double v) {
+    final s = v.toStringAsFixed(2);
+    final parts = s.split('.');
+    final whole = parts[0];
+    final buf = StringBuffer();
+    for (var i = 0; i < whole.length; i++) {
+      if (i > 0 && (whole.length - i) % 3 == 0) buf.write(',');
+      buf.write(whole[i]);
+    }
+    return '${buf.toString()}.${parts[1]}';
+  }
+}
