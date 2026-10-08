@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
 import '../widgets/auth_widgets.dart';
+import '../widgets/kyc_guard.dart';
 import 'deposit_ngn_screen.dart';
 import 'withdraw_ngn_screen.dart';
 
@@ -54,7 +55,14 @@ class TopUpWithdrawMenuScreen extends StatelessWidget {
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute<bool>(
-                            builder: (_) => const DepositNgnScreen(),
+                            builder: (_) => const KycGuard(
+                              featureName: 'Fiat deposits',
+                              featureReason:
+                                  'To keep your funds safe and comply with '
+                                  'regulations, we need to verify your '
+                                  'identity before you can deposit money.',
+                              child: DepositNgnScreen(),
+                            ),
                           ),
                         );
                       },

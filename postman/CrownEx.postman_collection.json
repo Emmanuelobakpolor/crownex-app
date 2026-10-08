@@ -1,0 +1,4438 @@
+{
+  "info": {
+    "_postman_id": "crownex-1",
+    "name": "CrownEx API",
+    "description": "# CrownEx API\n\nComplete Postman documentation for the CrownEx backend (Django REST Framework) covering the mobile app-facing API and the Admin Panel API.\n\n## Base URL\nAll requests use the `{{base_url}}` variable from the active environment. Point it at your local server (`http://127.0.0.1:8000`) or your deployed Railway URL.\n\n## Authentication\n- **User endpoints** use JWT bearer auth (`Authorization: Bearer <access_token>`). Run **Auth → Login** (or the registration pipeline) first — the access/refresh tokens are captured into the environment automatically via a test script.\n- **Admin endpoints** (`/api/admin/...`) use a *separate* JWT pair issued by **Admin – Auth → Admin Login**, stored as `admin_access_token`/`admin_refresh_token` so you can hold a user session and an admin session at the same time. Admin endpoints require `is_staff=True`.\n- Access tokens expire after 60 minutes; refresh tokens after 7 days. Use the **Refresh Token** request when a call starts returning 401.\n- A few endpoints are intentionally public: `GET /api/crypto/prices/`, `GET /api/crypto/fees/`, and the three webhook receivers (Flutterwave, PluginNG, Reloadly, Quidax) which authenticate via a shared secret/signature instead of a user session.\n\n## Transaction PIN\nMost money-moving endpoints (VTU purchases, gift card buys, crypto orders/withdrawals, virtual card actions) require the 4-digit transaction PIN set via **Auth → Set Transaction PIN**, sent as `pin` or `transaction_pin` depending on the endpoint.\n\n## Error shape\nBusiness-logic errors (raised as a `*ServiceError` on the backend) come back as:\n```json\n{ \"detail\": \"Human-readable message\", \"code\": \"machine_readable_code\" }\n```\nValidation errors from DRF serializers come back as `{ \"field_name\": [\"message\"] }` with status 400.\n\n## Folder map\n- **Auth / Profile** — signup pipeline, login, password/PIN management\n- **Wallet (NGN)** — Flutterwave-backed deposits/withdrawals\n- **VTU** — airtime, data, cable TV, electricity (PluginNG)\n- **Gift Cards** — Reloadly-backed digital gift cards\n- **Crypto** — buy/sell/swap, deposits, withdrawals (Quidax)\n- **KYC** — identity verification (Dojah)\n- **Virtual Cards** — USD card issuing (Bitnob)\n- **Admin – \\*** — the staff-only back office used by the CrownEx admin panel (crownex-admin)\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register (start signup)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Step 1 of signup. Creates an unverified user and emails a 4-digit OTP. Console email backend prints the OTP to the Django server log in dev.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"phone\": \"{{user_phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify OTP (email verification)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify-otp/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "description": "Step 2 of signup. Verifies the registration OTP sent by /register/. Alias: /verify-email/ (identical view).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"otp\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resend OTP",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/resend-otp/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "resend-otp"
+              ]
+            },
+            "description": "Resends the registration OTP (60s cooldown). Alias: /resend-verification/ (identical view).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Complete Profile (full name + password)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/complete-profile/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "complete-profile"
+              ]
+            },
+            "description": "Step 3 of signup, after email verification. Sets name + password and returns JWT access/refresh tokens plus the user object.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"full_name\": \"Jane Doe\",\n  \"password\": \"{{user_password}}\",\n  \"password_confirm\": \"{{user_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    const data = pm.response.json();",
+                  "    if (data.access) pm.environment.set('access_token', data.access);",
+                  "    if (data.refresh) pm.environment.set('refresh_token', data.refresh);",
+                  "    if (data.user && data.user.email) pm.environment.set('user_email', data.user.email);",
+                  "}",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set Transaction PIN",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/set-transaction-pin/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "set-transaction-pin"
+              ]
+            },
+            "description": "Authenticated. Sets the 4-digit transaction PIN required by most money-moving endpoints (wallet withdraw, VTU purchases, crypto orders, cards, gift cards).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pin\": \"1234\",\n  \"pin_confirm\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Email + password login. Returns JWT access/refresh tokens plus the user object. Automatically saves access_token/refresh_token to the environment.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    const data = pm.response.json();",
+                  "    if (data.access) pm.environment.set('access_token', data.access);",
+                  "    if (data.refresh) pm.environment.set('refresh_token', data.refresh);",
+                  "    if (data.user && data.user.email) pm.environment.set('user_email', data.user.email);",
+                  "}",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "SimpleJWT TokenRefreshView. Exchanges a valid refresh token for a new access token. ROTATE_REFRESH_TOKENS is on, so a new refresh token is also returned and should replace the stored one.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    const data = pm.response.json();",
+                  "    if (data.access) pm.environment.set('access_token', data.access);",
+                  "    if (data.refresh) pm.environment.set('refresh_token', data.refresh);",
+                  "}",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Blacklists the given refresh token server-side.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/change-password/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "change-password"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"{{user_password}}\",\n  \"new_password\": \"NewStrongPass123\",\n  \"new_password_confirm\": \"NewStrongPass123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change Transaction PIN",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/change-transaction-pin/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "change-transaction-pin"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_pin\": \"1234\",\n  \"new_pin\": \"4321\",\n  \"new_pin_confirm\": \"4321\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password (request OTP)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/forgot-password/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "Always returns 200 with a generic message regardless of whether the email exists, to avoid account enumeration.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Reset Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify-reset-token/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-reset-token"
+              ]
+            },
+            "description": "Validates the OTP sent by forgot-password before letting the UI show the \"new password\" screen.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"token\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/reset-password/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"token\": \"1234\",\n  \"password\": \"NewStrongPass123\",\n  \"password_confirm\": \"NewStrongPass123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Registration pipeline, session (login/logout/refresh), password/PIN changes, and password reset. All endpoints are under /api/auth/ except refresh (SimpleJWT)."
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/profile/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Profile (PATCH, partial)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/profile/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            },
+            "description": "Partial update — send only the fields you want to change: full_name, phone, profile_picture. For a profile picture upload use multipart/form-data with a `profile_picture` file field instead of this raw-JSON body.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Jane A. Doe\",\n  \"phone\": \"2348012345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Replace Profile (PUT, full)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/profile/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Jane A. Doe\",\n  \"phone\": \"2348012345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "GET/PUT/PATCH the logged-in user's own profile. Not under /api/auth/ — mounted directly at /api/profile/."
+    },
+    {
+      "name": "Wallet (NGN)",
+      "item": [
+        {
+          "name": "Get Balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/balance/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "balance"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Initiate Deposit",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/initiate-deposit/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "initiate-deposit"
+              ]
+            },
+            "description": "Creates a pending deposit transaction and returns the Flutterwave public key + customer payload needed to launch Flutterwave checkout client-side. Save tx_ref for the verify-payment call.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"5000.00\",\n  \"tx_ref\": \"crownex-dep-{{$timestamp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    const data = pm.response.json();",
+                  "    if (data.tx_ref) pm.environment.set('wallet_tx_ref', data.tx_ref);",
+                  "}",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Payment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/verify-payment/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "verify-payment"
+              ]
+            },
+            "description": "Called after the Flutterwave checkout flow completes client-side; re-verifies with Flutterwave server-side and credits the wallet.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tx_ref\": \"{{wallet_tx_ref}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Flutterwave Webhook (server-to-server)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Verif-Hash",
+                "value": "{{flw_webhook_hash}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/flw-webhook/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "flw-webhook"
+              ]
+            },
+            "description": "Not called by the app — this is what Flutterwave calls on your server. Included here for testing/replaying webhook payloads. Requires the Verif-Hash header to match FLW_WEBHOOK_HASH.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"charge.completed\",\n  \"data\": {\n    \"tx_ref\": \"{{wallet_tx_ref}}\",\n    \"status\": \"successful\",\n    \"amount\": 5000,\n    \"currency\": \"NGN\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Banks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/banks/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "banks"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resolve Account Name",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/resolve-account/?account_number=0123456789&bank_code=044",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "resolve-account"
+              ],
+              "query": [
+                {
+                  "key": "account_number",
+                  "value": "0123456789",
+                  "disabled": false
+                },
+                {
+                  "key": "bank_code",
+                  "value": "044",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Withdraw to Bank",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/withdraw/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "withdraw"
+              ]
+            },
+            "description": "Requires transaction_pin support was folded into WithdrawSerializer? No — check response codes; PIN is NOT required by this serializer (only amount/account fields). Processed within 24 hours per response message.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": \"2000.00\",\n  \"account_name\": \"Jane Doe\",\n  \"bank_name\": \"Access Bank\",\n  \"bank_code\": \"044\",\n  \"account_number\": \"0123456789\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Transaction History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/transactions/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "transactions"
+              ]
+            },
+            "description": "Latest 50 wallet transactions for the current user.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "NGN wallet: balance, Flutterwave-backed deposits, bank withdrawals, bank lookup, and transaction history."
+    },
+    {
+      "name": "VTU (Airtime, Data, Cable, Electricity)",
+      "item": [
+        {
+          "name": "Get Catalogue",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/vtu/catalogue/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "vtu",
+                "catalogue"
+              ]
+            },
+            "description": "Airtime networks, and data networks with their plans (PluginNG-backed).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buy Airtime",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/vtu/airtime/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "vtu",
+                "airtime"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subcategory_id\": \"1\",\n  \"network\": \"MTN\",\n  \"phone\": \"08012345678\",\n  \"amount\": \"500.00\",\n  \"transaction_pin\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buy Data",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/vtu/data/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "vtu",
+                "data"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subcategory_id\": \"1\",\n  \"network\": \"MTN\",\n  \"plan_id\": \"101\",\n  \"phone\": \"08012345678\",\n  \"transaction_pin\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cable Bouquets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/vtu/cable/bouquets/?network=gotv",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "vtu",
+                "cable",
+                "bouquets"
+              ],
+              "query": [
+                {
+                  "key": "network",
+                  "value": "gotv",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Smartcard",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/vtu/cable/verify/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "vtu",
+                "cable",
+                "verify"
+              ]
+            },
+            "description": "Looks up the customer name for a smartcard number before purchase confirmation.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"network\": \"gotv\",\n  \"cardno\": \"1234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buy Cable Subscription",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/vtu/cable/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "vtu",
+                "cable"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subcategory_id\": \"1\",\n  \"network\": \"gotv\",\n  \"phone\": \"08012345678\",\n  \"cardno\": \"1234567890\",\n  \"variation_code\": \"gotv-max\",\n  \"transaction_pin\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Electricity Variations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/vtu/electricity/variations/?network=Eko-Electric",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "vtu",
+                "electricity",
+                "variations"
+              ],
+              "query": [
+                {
+                  "key": "network",
+                  "value": "Eko-Electric",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Meter",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/vtu/electricity/verify/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "vtu",
+                "electricity",
+                "verify"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"network\": \"Eko-Electric\",\n  \"cardno\": \"12345678901\",\n  \"meter_type\": \"Prepaid\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buy Electricity",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/vtu/electricity/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "vtu",
+                "electricity"
+              ]
+            },
+            "description": "Note: variation_code reuses the Prepaid/Postpaid choice field (matches backend serializer as written).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subcategory_id\": \"1\",\n  \"network\": \"Eko-Electric\",\n  \"service_id\": \"ikeja-electric\",\n  \"phone\": \"08012345678\",\n  \"cardno\": \"12345678901\",\n  \"variation_code\": \"Prepaid\",\n  \"amount\": \"3000.00\",\n  \"transaction_pin\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Transaction Status (requery)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/vtu/transactions/{{vtu_reference}}/status/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "vtu",
+                "transactions",
+                "{{vtu_reference}}",
+                "status"
+              ]
+            },
+            "description": "Re-queries PluginNG for the current status of a pending purchase. Set vtu_reference in the environment or edit the URL path.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Transaction History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/vtu/transactions/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "vtu",
+                "transactions"
+              ]
+            },
+            "description": "Latest 50 VTU transactions (airtime/data/cable/electricity) for the current user.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PluginNG Webhook (server-to-server)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/vtu/webhook/{{pluginng_webhook_secret}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "vtu",
+                "webhook",
+                "{{pluginng_webhook_secret}}"
+              ]
+            },
+            "description": "Not called by the app — PluginNG calls this on your server. The secret is a path segment, not a header, and must match PLUGINNG_WEBHOOK_SECRET.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reference\": \"{{vtu_reference}}\",\n  \"status\": \"successful\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Airtime, data, cable TV, and electricity purchases via PluginNG, plus transaction status/history."
+    },
+    {
+      "name": "Gift Cards",
+      "item": [
+        {
+          "name": "Get Rate",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/giftcards/rate/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "giftcards",
+                "rate"
+              ]
+            },
+            "description": "Current app-controlled NGN-per-USD rate used to price gift cards.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Brands",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/giftcards/brands/?country_code=US",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "giftcards",
+                "brands"
+              ],
+              "query": [
+                {
+                  "key": "country_code",
+                  "value": "US",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Products for Brand",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/giftcards/products/?brand=Apple&country_code=US",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "giftcards",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "brand",
+                  "value": "Apple",
+                  "disabled": false
+                },
+                {
+                  "key": "country_code",
+                  "value": "US",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buy Gift Card",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/giftcards/buy/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "giftcards",
+                "buy"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": 12345,\n  \"unit_price_usd\": \"25.00\",\n  \"brand\": \"Apple\",\n  \"brand_asset\": \"\",\n  \"country_code\": \"US\",\n  \"pin\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Purchase History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/giftcards/history/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "giftcards",
+                "history"
+              ]
+            },
+            "description": "Latest 50 gift card purchases for the current user.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reloadly Webhook (server-to-server)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/giftcards/webhook/{{reloadly_webhook_secret}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "giftcards",
+                "webhook",
+                "{{reloadly_webhook_secret}}"
+              ]
+            },
+            "description": "Not called by the app — Reloadly calls this on your server. The secret is a path segment and must match RELOADLY_WEBHOOK_SECRET.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"abc123\",\n  \"status\": \"SUCCESSFUL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Digital gift card purchases (Apple, Amazon, Google Play, etc.) via Reloadly."
+    },
+    {
+      "name": "Crypto",
+      "item": [
+        {
+          "name": "Live Prices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/prices/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "prices"
+              ]
+            },
+            "description": "Public — no auth required. Live NGN prices for supported coins.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Public Fee Config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/fees/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "fees"
+              ]
+            },
+            "description": "Public — display-only fee config for client-side estimates. The real fee is frozen onto the quote at quote time.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My Wallets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/wallets/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "wallets"
+              ]
+            },
+            "description": "The user's internal crypto balances — source of truth, not Quidax's raw balances.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Quote",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/quote/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "quote"
+              ]
+            },
+            "description": "Locks rate + fee for 30 seconds. type is buy|sell|swap; to_coin is required only for swap. Save the returned id as crypto_quote_id to place an order.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"buy\",\n  \"coin\": \"btc\",\n  \"amount\": \"0.001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    const data = pm.response.json();",
+                  "    if (data.id) pm.environment.set('crypto_quote_id', data.id);",
+                  "}",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Order History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/orders/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "orders"
+              ]
+            },
+            "description": "Latest 50 buy/sell/swap orders for the current user.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Place Buy Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/orders/buy/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "orders",
+                "buy"
+              ]
+            },
+            "description": "Uses a quote from POST /quote/. If needs_payment is true in the response, the client still owes money via Flutterwave or bank transfer before crypto is delivered; wallet-funded orders complete synchronously.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quote_id\": \"{{crypto_quote_id}}\",\n  \"pin\": \"1234\",\n  \"idempotency_key\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    const data = pm.response.json();",
+                  "    if (data.reference) pm.environment.set('crypto_order_reference', data.reference);",
+                  "}",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Buy Payment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/orders/buy/verify/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "orders",
+                "buy",
+                "verify"
+              ]
+            },
+            "description": "Called after Flutterwave checkout completes client-side for a buy order.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reference\": \"{{crypto_order_reference}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload Payment Proof (bank transfer buy)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/orders/{{crypto_order_reference}}/proof/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "orders",
+                "{{crypto_order_reference}}",
+                "proof"
+              ]
+            },
+            "description": "For bank-transfer buys only. Doesn't execute the order — an admin reviews and approves via POST /api/admin/crypto/orders/<reference>/.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "proof",
+                  "src": null,
+                  "type": "file",
+                  "description": "Image file (screenshot/photo) of the bank transfer receipt."
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Place Sell Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/orders/sell/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "orders",
+                "sell"
+              ]
+            },
+            "description": "Sells immediately if balance is sufficient; otherwise comes back waiting_deposit — retry via the retry endpoint once funded.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quote_id\": \"{{crypto_quote_id}}\",\n  \"pin\": \"1234\",\n  \"idempotency_key\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "    const data = pm.response.json();",
+                  "    if (data.reference) pm.environment.set('crypto_order_reference', data.reference);",
+                  "}",
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Retry Sell Order (after deposit)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/orders/sell/{{crypto_order_reference}}/retry/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "orders",
+                "sell",
+                "{{crypto_order_reference}}",
+                "retry"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Place Swap Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/orders/swap/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "orders",
+                "swap"
+              ]
+            },
+            "description": "Requires the full source-coin balance up front; fails immediately (no waiting_deposit fallback) if insufficient. Quote must have been created with type=swap and a to_coin.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quote_id\": \"{{crypto_quote_id}}\",\n  \"pin\": \"1234\",\n  \"idempotency_key\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Deposit Address",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/address/{{crypto_coin}}/?network=trc20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "address",
+                "{{crypto_coin}}"
+              ],
+              "query": [
+                {
+                  "key": "network",
+                  "value": "trc20",
+                  "disabled": false,
+                  "description": "Required for multi-network coins like USDT."
+                }
+              ]
+            },
+            "description": "Provisions a Quidax sub-account on first use if the user doesn’t have one yet. Set crypto_coin (e.g. btc, usdt) in the environment or edit the URL path.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ensure Account (warm-up)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/account/ensure/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "account",
+                "ensure"
+              ]
+            },
+            "description": "Best-effort Quidax sub-account warm-up; call fire-and-forget when the user opens the crypto section. Always answers 200.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Withdraw Estimate",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/withdraw/estimate/?coin=btc&amount=0.01",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "withdraw",
+                "estimate"
+              ],
+              "query": [
+                {
+                  "key": "coin",
+                  "value": "btc",
+                  "disabled": false
+                },
+                {
+                  "key": "amount",
+                  "value": "0.01",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "No side effects — fee/net-amount preview before confirming a withdrawal.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Withdraw Crypto",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/withdraw/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "withdraw"
+              ]
+            },
+            "description": "No admin approval needed — address format, min notional, daily NGN cap, and balance reservation guard this. network is required for multi-network coins.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coin\": \"btc\",\n  \"amount\": \"0.001\",\n  \"address\": \"bc1qxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n  \"network\": \"\",\n  \"pin\": \"1234\",\n  \"idempotency_key\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Withdrawal History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/withdrawals/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "withdrawals"
+              ]
+            },
+            "description": "Latest 50 crypto withdrawals for the current user.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quidax Webhook (server-to-server)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "quidax-signature",
+                "value": "{{quidax_webhook_signature}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/crypto/webhook/quidax/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "crypto",
+                "webhook",
+                "quidax"
+              ]
+            },
+            "description": "Not called by the app — Quidax calls this on your server. Verified via the quidax-signature header, format t=<timestamp>,s=<hex HMAC-SHA256(QUIDAX_WEBHOOK_SECRET, \"<timestamp>.<raw_body>\")>; you cannot produce a valid signature from Postman without computing it yourself. Handled events: deposit.successful, wallet.address.generated, order.done/order.completed, withdraw.successful, withdraw.rejected.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"deposit.successful\",\n  \"data\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Crypto trading (buy/sell/swap), deposits, withdrawals via Quidax. Prices and public fees are unauthenticated; everything else requires login."
+    },
+    {
+      "name": "KYC (Identity Verification)",
+      "item": [
+        {
+          "name": "Submit Verification",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/kyc/submit/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "kyc",
+                "submit"
+              ]
+            },
+            "description": "Multipart. Calls Dojah synchronously; approved/rejected are final for the auto-decided score range, review sits in the admin queue. Sandbox test NIN: 70123456789.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "id_type",
+                  "value": "nin",
+                  "type": "text",
+                  "description": "nin or bvn"
+                },
+                {
+                  "key": "id_number",
+                  "value": "70123456789",
+                  "type": "text"
+                },
+                {
+                  "key": "address",
+                  "value": "1 Example Street, Lagos",
+                  "type": "text"
+                },
+                {
+                  "key": "selfie",
+                  "src": null,
+                  "type": "file"
+                },
+                {
+                  "key": "id_document",
+                  "src": null,
+                  "type": "file",
+                  "description": "Optional"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verification Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/kyc/status/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "kyc",
+                "status"
+              ]
+            },
+            "description": "Returns { \"status\": null } if the user has never submitted a verification.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Identity verification via Dojah (NIN/BVN + selfie liveness match) — required before requesting a virtual card."
+    },
+    {
+      "name": "Virtual Cards",
+      "item": [
+        {
+          "name": "Request Card",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/cards/request/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cards",
+                "request"
+              ]
+            },
+            "description": "KYC- and PIN-gated. Creates the card in Bitnob asynchronously (status starts pending) — poll GET /status/ for the final state.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pin\": \"1234\",\n  \"address\": \"1 Example Street, Lagos\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Card Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/cards/status/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cards",
+                "status"
+              ]
+            },
+            "description": "Returns { \"status\": null } if no card exists yet. Refreshes from Bitnob if still pending/processing.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fund Card",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/cards/fund/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cards",
+                "fund"
+              ]
+            },
+            "description": "Debits the NGN wallet and credits the USD virtual card balance.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ngn_amount\": \"10000.00\",\n  \"pin\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Withdraw from Card",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/cards/withdraw/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cards",
+                "withdraw"
+              ]
+            },
+            "description": "Debits the USD card balance and credits the NGN wallet.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ngn_amount\": \"5000.00\",\n  \"pin\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Freeze Card",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/cards/freeze/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cards",
+                "freeze"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unfreeze Card",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/cards/unfreeze/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cards",
+                "unfreeze"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Terminate Card",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/cards/terminate/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cards",
+                "terminate"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"No longer needed\",\n  \"pin\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Card Transaction History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/cards/transactions/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cards",
+                "transactions"
+              ]
+            },
+            "description": "Latest 50 transactions for the current user’s card.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 2xx', function () {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "USD virtual card issuing and management via Bitnob (request, fund, withdraw, freeze/unfreeze, terminate)."
+    },
+    {
+      "name": "Admin Panel",
+      "item": [
+        {
+          "name": "Admin – Auth",
+          "item": [
+            {
+              "name": "Create Admin Account (bootstrap)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Admin-Secret",
+                    "value": "{{admin_registration_secret}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/create/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "create"
+                  ]
+                },
+                "description": "One-time bootstrap for the first admin/staff account. Gated by the X-Admin-Secret header, which must match ADMIN_REGISTRATION_SECRET in the backend environment (returns 503 if that env var is unset). Not needed for day-to-day admin login — only for creating new admin accounts.",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"full_name\": \"CrownEx Admin\",\n  \"password\": \"{{admin_password}}\",\n  \"password_confirm\": \"{{admin_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Admin Login",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/login/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "login"
+                  ]
+                },
+                "description": "Staff accounts only (is_staff=True) — 403 for a regular user account. Returns JWT access/refresh tokens; automatically saved to admin_access_token/admin_refresh_token.",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                      "    const data = pm.response.json();",
+                      "    if (data.access) pm.environment.set('admin_access_token', data.access);",
+                      "    if (data.refresh) pm.environment.set('admin_refresh_token', data.refresh);",
+                      "}",
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "Bootstrap the first admin account, then log in. All other admin endpoints require the resulting admin_access_token (IsAdminUser)."
+        },
+        {
+          "name": "Admin – Dashboard",
+          "item": [
+            {
+              "name": "Overview Stats",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/overview/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "overview"
+                  ]
+                },
+                "description": "Dashboard stat cards (totals across users, transactions, etc.).",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "My Admin Profile",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/profile/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "profile"
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update My Admin Profile",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/profile/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "profile"
+                  ]
+                },
+                "description": "Provide new_email and/or full_name; current_password is always required to confirm the change.",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"new_email\": \"newadmin@crownex.app\",\n  \"full_name\": \"CrownEx Admin\",\n  \"current_password\": \"{{admin_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "Admin dashboard overview stats and the logged-in admin’s own account."
+        },
+        {
+          "name": "Admin – Users",
+          "item": [
+            {
+              "name": "List Users",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/users/?search=&page=1&page_size=25",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Matches email/name/phone"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "25",
+                      "disabled": true,
+                      "description": "Max 100"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "User Detail",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/users/{{admin_target_user_id}}/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "users",
+                    "{{admin_target_user_id}}"
+                  ]
+                },
+                "description": "Set admin_target_user_id in the environment, or edit the URL path directly.",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "Read-only user directory and detail view for support/ops."
+        },
+        {
+          "name": "Admin – Transactions",
+          "item": [
+            {
+              "name": "Unified Transaction Feed",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/transactions/?type=all&page=1&page_size=25",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "transactions"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "all",
+                      "disabled": false,
+                      "description": "all | deposit | withdrawal | airtime | data | cable | electricity | vtu | giftcard"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "25",
+                      "disabled": true,
+                      "description": "Max 100"
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "Cross-service transaction feed (wallet deposits/withdrawals, VTU, gift cards) for ops visibility."
+        },
+        {
+          "name": "Admin – Crypto Fees",
+          "item": [
+            {
+              "name": "List Fee Settings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/fees/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "fees"
+                  ]
+                },
+                "description": "Auto-creates buy/sell/swap/withdraw fee rows on first call if missing.",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update Fee Setting",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/fees/{{admin_fee_id}}/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "fees",
+                    "{{admin_fee_id}}"
+                  ]
+                },
+                "description": "Only affects quotes created after this save — quotes already locked keep their frozen fee. Set admin_fee_id from the List Fee Settings response.",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"flat_usd\": \"1.50\",\n  \"percent\": \"1.5\",\n  \"is_active\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "Configure buy/sell/swap/withdraw fee percentages and flat USD fees for crypto trading."
+        },
+        {
+          "name": "Admin – Crypto Orders",
+          "item": [
+            {
+              "name": "List Crypto Orders",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/crypto/orders/?status=&type=&search=&page=1&page_size=25",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "crypto",
+                    "orders"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": "e.g. pending_payment, waiting_deposit, completed, failed"
+                    },
+                    {
+                      "key": "type",
+                      "value": "",
+                      "disabled": true,
+                      "description": "buy | sell | swap"
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Matches reference or user email"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "25",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Act on Crypto Order",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/crypto/orders/{{crypto_order_reference}}/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "crypto",
+                    "orders",
+                    "{{crypto_order_reference}}"
+                  ]
+                },
+                "description": "action: approve (bank-transfer buy with proof → execute) | reject (cancel stuck pending_payment/waiting_deposit) | confirm_deposit (waiting_deposit sell → re-attempt, e.g. missed webhook) | retry (re-attempt a failed buy).",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"approve\",\n  \"note\": \"Payment proof verified manually.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "Review and act on bank-transfer buys awaiting proof approval, stuck orders, and missed-webhook recovery."
+        },
+        {
+          "name": "Admin – Crypto Withdrawals",
+          "item": [
+            {
+              "name": "List Crypto Withdrawals",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/crypto/withdrawals/?status=&search=&page=1&page_size=25",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "crypto",
+                    "withdrawals"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Matches reference or user email"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "25",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Act on Crypto Withdrawal",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/crypto/withdrawals/{{crypto_withdrawal_reference}}/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "crypto",
+                    "withdrawals",
+                    "{{crypto_withdrawal_reference}}"
+                  ]
+                },
+                "description": "action: complete (requires tx_id) | reject. Manual recovery for when a withdraw.successful/withdraw.rejected webhook never arrived.",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"complete\",\n  \"tx_id\": \"onchain-tx-hash\",\n  \"note\": \"Confirmed manually on-chain.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "Manual recovery path for crypto withdrawals when Quidax’s webhook never arrives."
+        },
+        {
+          "name": "Admin – KYC",
+          "item": [
+            {
+              "name": "List KYC Verifications",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/kyc/?status=&search=&page=1&page_size=25",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "kyc"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": "e.g. pending, review, approved, rejected"
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Matches id_number or user email"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "25",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Act on KYC Verification",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/kyc/{{admin_kyc_id}}/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "kyc",
+                    "{{admin_kyc_id}}"
+                  ]
+                },
+                "description": "action: approve | reject. Manual override for verifications sitting in `review` (Dojah match score 70–89) or to correct an auto-decided outcome.",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"approve\",\n  \"note\": \"Manually reviewed, documents match.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "Manual review queue for identity verifications in the gray-zone score range or needing correction."
+        },
+        {
+          "name": "Admin – Virtual Cards",
+          "item": [
+            {
+              "name": "List Virtual Cards",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/cards/?status=&search=",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "cards"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Matches masked PAN or user email"
+                    }
+                  ]
+                },
+                "description": "Read-only. Cards move through Bitnob’s own lifecycle automatically — no manual approve/reject step like KYC or crypto orders. For visibility and manual recovery only.",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status is 2xx', function () {",
+                      "    pm.expect(pm.response.code).to.be.within(200, 299);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "description": "Read-only visibility into all issued virtual cards."
+        }
+      ],
+      "description": "Staff-only back office API consumed by the crownex-admin React dashboard. Requires an admin JWT (see Admin – Auth) with is_staff=True."
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    }
+  ]
+}

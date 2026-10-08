@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../widgets/kyc_guard.dart';
 import 'buy_airtime_screen.dart';
 import 'buy_data_screen.dart';
 import 'cable_tv_screen.dart';
@@ -61,6 +62,33 @@ class _ServicesScreenState extends State<ServicesScreen> {
     Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
   }
 
+  void _pushCrypto(BuildContext context) {
+    _push(
+      context,
+      const KycGuard(
+        featureName: 'Crypto trading',
+        featureReason:
+            'To keep your funds safe and comply with regulations, we '
+            'need to verify your identity before you can buy, sell, swap '
+            'or transfer crypto.',
+        child: CryptoHubScreen(),
+      ),
+    );
+  }
+
+  void _pushDepositNgn(BuildContext context) {
+    _push(
+      context,
+      const KycGuard(
+        featureName: 'Fiat deposits',
+        featureReason:
+            'To keep your funds safe and comply with regulations, we '
+            'need to verify your identity before you can deposit money.',
+        child: DepositNgnScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final money = [
@@ -69,7 +97,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
         label: 'Add Money',
         subtitle: 'Fund your NGN wallet',
         color: const Color(0xFF16A34A),
-        onTap: () => _push(context, const DepositNgnScreen()),
+        onTap: () => _pushDepositNgn(context),
       ),
       _ServiceEntry(
         icon: Icons.account_balance_rounded,
@@ -134,7 +162,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
         tag: 'CRYPTO',
         title: 'Buy, sell & swap crypto',
         subtitle: 'Live rates on 26 coins, instantly',
-        onTap: () => _push(context, const CryptoHubScreen()),
+        onTap: () => _pushCrypto(context),
       ),
       _PromoSlide(
         imageUrl: 'https://images.unsplash.com/photo-1580519542036-c47de6196ba5?w=800&q=80',

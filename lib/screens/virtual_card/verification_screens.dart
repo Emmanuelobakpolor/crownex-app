@@ -11,13 +11,39 @@ import 'virtual_card_widgets.dart';
 
 // ─── Verification hub ────────────────────────────────────────────────────────
 
+/// Lets the same 3-step identity-verification wizard be reused both for
+/// virtual card issuance and as a general KYC gate (crypto, fiat deposit)
+/// without the copy hard-coding "your card setup" everywhere.
+class VerificationFlowConfig {
+  const VerificationFlowConfig({
+    this.description =
+        'Provide the necessary information to complete the\n'
+        'verification process to proceed with your card setup.',
+    this.completedLabel = 'Go to cards',
+    this.exitToRoot = true,
+  });
+
+  /// Copy shown under the hub's headline.
+  final String description;
+
+  /// Label of the button on the "review pending" screen once approved.
+  final String completedLabel;
+
+  /// If true (virtual card flow), the success button pops all the way back
+  /// to the app root. If false (KYC gate flow), it just pops back to the
+  /// caller so the gated screen can re-check status and unlock immediately.
+  final bool exitToRoot;
+}
+
 class CardVerificationHubScreen extends StatefulWidget {
   const CardVerificationHubScreen({
     super.key,
     required this.controller,
+    this.config = const VerificationFlowConfig(),
   });
 
   final VirtualCardController controller;
+  final VerificationFlowConfig config;
 
   @override
   State<CardVerificationHubScreen> createState() =>
@@ -67,10 +93,9 @@ class _CardVerificationHubScreenState extends State<CardVerificationHubScreen> {
                             ),
                           ),
                           const SizedBox(height: 10),
-                          const Text(
-                            'Provide the necessary information to complete the\n'
-                            'verification process to proceed with your card setup.',
-                            style: TextStyle(
+                          Text(
+                            widget.config.description,
+                            style: const TextStyle(
                               fontSize: 14,
                               height: 1.45,
                               color: AppColors.textSecondary,
@@ -145,6 +170,7 @@ class _CardVerificationHubScreenState extends State<CardVerificationHubScreen> {
                                     MaterialPageRoute<void>(
                                       builder: (_) => CardReviewPendingScreen(
                                         controller: controller,
+                                        config: widget.config,
                                       ),
                                     ),
                                   );
@@ -448,15 +474,18 @@ class _IdentityVerificationScreenState
   String? _error;
 
   static const _idTypes = [
-    ('International Passport', true),
-    ('NIN', false),
+    ('NIN', true),
+    ('BVN', false),
+    ('International Passport', false),
     ("Driver's License", false),
     ('Voter\'s Card', false),
   ];
 
-  // Dojah verification is currently wired up for NIN only (see
-  // kyc/dojah.py) — other ID types can be added there and here together.
-  static const _supportedBackendTypes = {'NIN': 'nin'};
+  // Dojah verification is wired up for NIN and BVN (see kyc/dojah.py) —
+  // Passport/Driver's License/Voter's Card would need Dojah's Document
+  // Analysis product instead of the NIN/BVN + selfie face-match endpoints
+  // used here, so they stay unsupported until that's added.
+  static const _supportedBackendTypes = {'NIN': 'nin', 'BVN': 'bvn'};
 
   @override
   void dispose() {
@@ -722,6 +751,8 @@ class _ResidentialAddressScreenState extends State<ResidentialAddressScreen> {
   final _zip = TextEditingController();
   String? _state;
   final String _country = 'Nigeria';
+  bool _submitting = false;
+  String? _error;
 
   static const _states = [
     'Abia',
@@ -777,7 +808,38 @@ class _ResidentialAddressScreenState extends State<ResidentialAddressScreen> {
       _house.text.trim().isNotEmpty &&
       _city.text.trim().isNotEmpty &&
       _state != null &&
-      _zip.text.trim().isNotEmpty;
+      _zip.text.trim().isNotEmpty &&
+      !_submitting;
+
+  Future<void> _submit() async {
+    final composed =
+        '${_house.text.trim()} ${_address.text.trim()}, '
+        '${_city.text.trim()}, $_state, $_country ${_zip.text.trim()}';
+
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+
+    try {
+      await KycService.instance.updateAddress(composed);
+      if (!mounted) return;
+      widget.controller.completeAddress(address: composed);
+      Navigator.of(context).pop(true);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _error = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _error = 'Could not save your address. Please try again.';
+      });
+    }
+  }
 
   Future<void> _pickState() async {
     final result = await showModalBottomSheet<String>(
@@ -937,6 +999,13 @@ class _ResidentialAddressScreenState extends State<ResidentialAddressScreen> {
                       keyboardType: TextInputType.number,
                       onChanged: (_) => setState(() {}),
                     ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        _error!,
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -945,13 +1014,8 @@ class _ResidentialAddressScreenState extends State<ResidentialAddressScreen> {
               padding: EdgeInsets.fromLTRB(20, 8, 20, 12 + bottom),
               child: VerifySubmitButton(
                 enabled: _valid,
-                onPressed: () {
-                  final composed =
-                      '${_house.text.trim()} ${_address.text.trim()}, '
-                      '${_city.text.trim()}, $_state, $_country ${_zip.text.trim()}';
-                  widget.controller.completeAddress(address: composed);
-                  Navigator.of(context).pop(true);
-                },
+                label: _submitting ? 'Saving…' : 'Submit',
+                onPressed: _submit,
               ),
             ),
           ],
@@ -964,9 +1028,14 @@ class _ResidentialAddressScreenState extends State<ResidentialAddressScreen> {
 // ─── Review pending ──────────────────────────────────────────────────────────
 
 class CardReviewPendingScreen extends StatefulWidget {
-  const CardReviewPendingScreen({super.key, required this.controller});
+  const CardReviewPendingScreen({
+    super.key,
+    required this.controller,
+    this.config = const VerificationFlowConfig(),
+  });
 
   final VirtualCardController controller;
+  final VerificationFlowConfig config;
 
   @override
   State<CardReviewPendingScreen> createState() => _CardReviewPendingScreenState();
@@ -1028,14 +1097,22 @@ class _CardReviewPendingScreenState extends State<CardReviewPendingScreen> {
                   ),
                   const Spacer(flex: 3),
                   AuthPrimaryButton(
-                    label: rejected ? 'Try again' : 'Go to cards',
+                    label: rejected ? 'Try again' : widget.config.completedLabel,
                     onPressed: () {
                       if (rejected) {
                         Navigator.of(context).pop();
                         return;
                       }
                       controller.markReviewSeen();
-                      Navigator.of(context).popUntil((r) => r.isFirst);
+                      if (widget.config.exitToRoot) {
+                        Navigator.of(context).popUntil((r) => r.isFirst);
+                      } else {
+                        // Pop this screen + the hub, back to whatever pushed
+                        // the hub (e.g. a KycGuard, which re-checks status).
+                        Navigator.of(context)
+                          ..pop()
+                          ..pop();
+                      }
                     },
                   ),
                 ],

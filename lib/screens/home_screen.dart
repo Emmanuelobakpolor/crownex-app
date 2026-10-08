@@ -8,6 +8,8 @@ import '../services/app_transactions_service.dart';
 import '../services/user_session.dart';
 import '../services/wallet_service.dart';
 import '../theme/app_colors.dart';
+import '../widgets/kyc_banner.dart';
+import '../widgets/kyc_guard.dart';
 import '../widgets/user_avatar.dart';
 import 'buy_airtime_screen.dart';
 import 'buy_data_screen.dart';
@@ -177,9 +179,11 @@ class _HomeTabState extends State<_HomeTab> with RouteAware {
 
   Future<void> _load() async {
     setState(() => _loading = true);
+    final session = context.read<UserSession>();
     try {
       final wallet = await _wallet.getWallet();
       final transactions = await AppTransactionsService.instance.getAll();
+      if (!session.kycChecked) await session.refreshKycStatus();
       if (!mounted) return;
       setState(() {
         _balance = wallet.ngnBalance;
@@ -194,7 +198,15 @@ class _HomeTabState extends State<_HomeTab> with RouteAware {
 
   Future<void> _openDeposit() async {
     final refreshed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(builder: (_) => const DepositMenuScreen()),
+      MaterialPageRoute<bool>(
+        builder: (_) => const KycGuard(
+          featureName: 'Fiat deposits',
+          featureReason:
+              'To keep your funds safe and comply with regulations, we '
+              'need to verify your identity before you can deposit money.',
+          child: DepositMenuScreen(),
+        ),
+      ),
     );
     if (refreshed == true) _load();
   }
@@ -254,6 +266,12 @@ class _HomeTabState extends State<_HomeTab> with RouteAware {
                     onWithdraw: _openWithdraw,
                     onMore: _openMenu,
                   ),
+                  if (!_loading)
+                    KycBanner(
+                      status: context.watch<UserSession>().kycStatus,
+                      onVerified: () =>
+                          context.read<UserSession>().refreshKycStatus(),
+                    ),
                   const SizedBox(height: 20),
                   _ServicesGrid(onOpenVirtualCard: widget.onOpenVirtualCard),
                   const SizedBox(height: 24),
@@ -676,9 +694,18 @@ class _ServicesGrid extends StatelessWidget {
         iconColor: const Color(0xFF14B8A6),
         icon: Icons.currency_bitcoin_rounded,
         onTap: () {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute<void>(builder: (_) => const CryptoHubScreen()));
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const KycGuard(
+                featureName: 'Crypto trading',
+                featureReason:
+                    'To keep your funds safe and comply with regulations, '
+                    'we need to verify your identity before you can buy, '
+                    'sell, swap or transfer crypto.',
+                child: CryptoHubScreen(),
+              ),
+            ),
+          );
         },
       ),
       _ServiceItem(

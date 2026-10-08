@@ -41,6 +41,23 @@ class CryptoService {
     }
   }
 
+  /// GET /crypto/settings/ — whether incoming crypto deposits are sold to
+  /// NGN automatically at the live rate.
+  Future<bool> getAutoConvertDeposits() async {
+    final data = await _client.get('/crypto/settings/', auth: true);
+    return data['auto_convert_deposits'] as bool? ?? false;
+  }
+
+  /// PATCH /crypto/settings/ — applies to deposits that arrive afterwards.
+  Future<bool> setAutoConvertDeposits(bool enabled) async {
+    final data = await _client.patch(
+      '/crypto/settings/',
+      body: {'auto_convert_deposits': enabled},
+      auth: true,
+    );
+    return data['auto_convert_deposits'] as bool? ?? enabled;
+  }
+
   /// GET /crypto/wallets/
   Future<List<CryptoWalletBalance>> getWallets() async {
     final data = await _client.getList('/crypto/wallets/', auth: true);

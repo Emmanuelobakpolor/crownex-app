@@ -40,4 +40,16 @@ class KycService {
     if (data['status'] == null) return null;
     return KycVerification.fromJson(data);
   }
+
+  /// PATCH /kyc/address/ — saves the residential address collected in the
+  /// wizard's last step. Separate from submitVerification so it doesn't
+  /// re-trigger a Dojah call; requires a prior submission to exist.
+  Future<KycVerification> updateAddress(String address) async {
+    final data = await _client.patch(
+      '/kyc/address/',
+      body: {'address': address},
+      auth: true,
+    );
+    return KycVerification.fromJson(data);
+  }
 }
