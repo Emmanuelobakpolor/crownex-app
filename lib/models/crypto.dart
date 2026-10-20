@@ -1,5 +1,6 @@
 // Matches crypto/serializers.py (crownex-backend/crypto/urls.py) — live
-// prices, wallets, quotes, orders, deposit addresses, and withdrawals.
+// prices, wallets, quotes, orders, deposit addresses, deposits, and
+// withdrawals.
 
 import 'dart:ui' show Color;
 
@@ -12,8 +13,8 @@ DateTime _parseDate(dynamic v) =>
 /// crypto/withdrawals.py:_ADDRESS_PATTERNS. The full coin list itself is
 /// never hardcoded here — GET /crypto/prices/ is the source of truth.
 const Map<String, List<String>> kCryptoCoinNetworks = {
-  'usdt': ['TRC20', 'ERC20'],
-  'usdc': ['TRC20', 'ERC20'],
+  'usdt': ['TRC20', 'ERC20', 'BEP20'],
+  'usdc': ['ERC20', 'BEP20', 'POLYGON'],
 };
 
 class CryptoCoin {
@@ -199,6 +200,7 @@ class CryptoOrder {
     required this.status,
     this.paymentProof,
     required this.note,
+    this.refundedNgn,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -217,6 +219,10 @@ class CryptoOrder {
   final CryptoOrderStatus status;
   final String? paymentProof;
   final String note;
+
+  /// Swap only: NGN credited to the user's wallet because the destination
+  /// coin couldn't be bought. Non-null means "refunded", not "lost".
+  final double? refundedNgn;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -236,6 +242,7 @@ class CryptoOrder {
       status: _orderStatusFrom(json['status'] as String?),
       paymentProof: json['payment_proof'] as String?,
       note: json['note'] as String? ?? '',
+      refundedNgn: _parseNullable(json['refunded_ngn']),
       createdAt: _parseDate(json['created_at']),
       updatedAt: _parseDate(json['updated_at']),
     );
@@ -422,6 +429,65 @@ class CryptoWithdrawal {
       note: json['note'] as String? ?? '',
       createdAt: _parseDate(json['created_at']),
       updatedAt: _parseDate(json['updated_at']),
+    );
+  }
+}
+
+/// What happened to a deposit (crypto/serializers.py:CryptoDepositSerializer):
+/// held as crypto (auto-convert off), or the auto-convert outcome.
+enum CryptoConversionStatus { held, converting, converted, skipped, failed }
+
+CryptoConversionStatus _conversionStatusFrom(String? value) {
+  switch (value) {
+    case 'converting':
+      return CryptoConversionStatus.converting;
+    case 'converted':
+      return CryptoConversionStatus.converted;
+    case 'skipped':
+      return CryptoConversionStatus.skipped;
+    case 'failed':
+      return CryptoConversionStatus.failed;
+    default:
+      return CryptoConversionStatus.held;
+  }
+}
+
+/// GET /crypto/deposits/ — one credited on-chain deposit; ngnAmount/rateNgn
+/// are set only once auto-convert has sold it.
+class CryptoDeposit {
+  const CryptoDeposit({
+    required this.id,
+    required this.coin,
+    required this.amount,
+    required this.autoConvert,
+    required this.status,
+    required this.ngnAmount,
+    required this.rateNgn,
+    required this.orderReference,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String coin;
+  final double amount;
+  final bool autoConvert;
+  final CryptoConversionStatus status;
+  final double? ngnAmount;
+  final double? rateNgn;
+  final String? orderReference;
+  final DateTime createdAt;
+
+  factory CryptoDeposit.fromJson(Map<String, dynamic> json) {
+    return CryptoDeposit(
+      id: json['id']?.toString() ?? '',
+      coin: json['coin'] as String? ?? '',
+      amount: _parse(json['amount']),
+      autoConvert: json['auto_convert'] as bool? ?? false,
+      status: _conversionStatusFrom(json['conversion_status'] as String?),
+      ngnAmount: _parseNullable(json['ngn_amount']),
+      rateNgn: _parseNullable(json['rate_ngn']),
+      orderReference: json['order_reference'] as String?,
+      createdAt: _parseDate(json['created_at']),
     );
   }
 }

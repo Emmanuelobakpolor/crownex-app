@@ -225,6 +225,15 @@ class CryptoService {
     return CryptoWithdrawal.fromJson(data);
   }
 
+  /// GET /crypto/deposits/ — latest 50 credited deposits with their
+  /// auto-convert outcome, newest first.
+  Future<List<CryptoDeposit>> getDeposits() async {
+    final data = await _client.getList('/crypto/deposits/', auth: true);
+    return data
+        .map((d) => CryptoDeposit.fromJson(d as Map<String, dynamic>))
+        .toList();
+  }
+
   /// GET /crypto/withdrawals/ — latest 50, newest first.
   Future<List<CryptoWithdrawal>> getWithdrawalHistory() async {
     final data = await _client.getList('/crypto/withdrawals/', auth: true);

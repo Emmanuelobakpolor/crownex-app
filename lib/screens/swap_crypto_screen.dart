@@ -208,12 +208,34 @@ class _SwapCryptoScreenState extends State<SwapCryptoScreen> {
       );
       if (!mounted) return;
       setState(() => _submitting = false);
+      _refreshBalances();
 
       if (order.status == CryptoOrderStatus.completed) {
         await _showSuccessSheet(order);
+      } else if (order.refundedNgn != null) {
+        _showResultDialog(
+          title: 'Swap refunded',
+          icon: Icons.account_balance_wallet_outlined,
+          color: const Color(0xFFF59E0B),
+          message: order.note.isNotEmpty
+              ? order.note
+              : "We couldn't complete your swap, so ₦${order.refundedNgn!.toStringAsFixed(2)} "
+                  'was added to your NGN wallet instead.',
+        );
+      } else if (order.status == CryptoOrderStatus.processing) {
+        _showResultDialog(
+          title: 'Swap processing',
+          icon: Icons.hourglass_top_rounded,
+          color: AppColors.primary,
+          message: "We're confirming your swap with our provider. Your balance will update "
+              "automatically once it's done — no need to try again.",
+        );
       } else {
-        _showFailureDialog(
-          order.note.isNotEmpty ? order.note : 'Your swap could not be completed.',
+        _showResultDialog(
+          title: 'Swap failed',
+          icon: Icons.error_outline_rounded,
+          color: const Color(0xFFDC2626),
+          message: order.note.isNotEmpty ? order.note : 'Your swap could not be completed.',
         );
       }
     } on ApiException catch (e) {
@@ -245,12 +267,30 @@ class _SwapCryptoScreenState extends State<SwapCryptoScreen> {
     );
   }
 
-  void _showFailureDialog(String message) {
+  /// Re-reads wallet balances without the full-screen loader, so the
+  /// "Balance" line reflects what the swap just debited/credited.
+  Future<void> _refreshBalances() async {
+    try {
+      final wallets = await _crypto.getWallets();
+      if (!mounted) return;
+      setState(() => _balances = {for (final w in wallets) w.coin: w.available});
+    } catch (_) {
+      // Stale balance until the next visit is fine.
+    }
+  }
+
+  void _showResultDialog({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required String message,
+  }) {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Swap failed'),
-        content: Text(message),
+        icon: Icon(icon, color: color, size: 40),
+        title: Text(title, textAlign: TextAlign.center),
+        content: Text(message, textAlign: TextAlign.center),
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('OK')),
         ],

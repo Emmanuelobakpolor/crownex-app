@@ -21,6 +21,7 @@ import 'gift_card_screen.dart';
 import 'services_screen.dart';
 import 'settings_screen.dart';
 import 'top_up_withdraw_menu_screen.dart';
+import 'transaction_details_screen.dart';
 import 'transaction_history_screen.dart';
 import 'virtual_card/virtual_card_controller.dart';
 import 'virtual_card/virtual_card_tab.dart';
@@ -288,24 +289,24 @@ class _HomeTabState extends State<_HomeTab> with RouteAware {
                 _loading
                     ? const []
                     : _recent.isEmpty
-                        ? [
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 24),
-                              child: Center(
-                                child: Text(
-                                  'No transactions yet',
-                                  style: TextStyle(color: AppColors.textMuted),
-                                ),
-                              ),
+                    ? [
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(
+                            child: Text(
+                              'No transactions yet',
+                              style: TextStyle(color: AppColors.textMuted),
                             ),
-                          ]
-                        : [
-                            for (final tx in _recent) ...[
-                              _NgnTransactionTile(tx: tx),
-                              const SizedBox(height: 12),
-                            ],
-                            const SizedBox(height: 68),
-                          ],
+                          ),
+                        ),
+                      ]
+                    : [
+                        for (final tx in _recent) ...[
+                          _NgnTransactionTile(tx: tx),
+                          const SizedBox(height: 12),
+                        ],
+                        const SizedBox(height: 68),
+                      ],
               ),
             ),
           ),
@@ -487,8 +488,8 @@ class _BalanceCard extends StatelessWidget {
                   loading
                       ? 'N••••••'
                       : balanceVisible
-                          ? 'N${_formatBalance(balance)}'
-                          : 'N••••••',
+                      ? 'N${_formatBalance(balance)}'
+                      : 'N••••••',
                   style: const TextStyle(
                     fontSize: 38,
                     fontWeight: FontWeight.w800,
@@ -837,7 +838,7 @@ class _RecentTransactionsHeader extends StatelessWidget {
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primary,
-                
+
                 decorationColor: AppColors.primary,
               ),
             ),
@@ -874,6 +875,12 @@ class _RecentTransactionsHeader extends StatelessWidget {
         bg: const Color(0xFFFFF0C2),
         fg: const Color(0xFFD4A017),
       );
+    case AppTxCategory.cryptoDeposit:
+      return (
+        icon: Icons.currency_exchange_rounded,
+        bg: const Color(0xFFFFF1D6),
+        fg: const Color(0xFFE59A0B),
+      );
   }
 }
 
@@ -885,8 +892,9 @@ class _NgnTransactionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final iconStyle = _iconStyleFor(tx.category);
-    final amountColor =
-        tx.isCredit ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+    final amountColor = tx.isCredit
+        ? const Color(0xFF16A34A)
+        : const Color(0xFFDC2626);
     final statusColor = switch (tx.status) {
       AppTxStatus.completed => const Color(0xFF16A34A),
       AppTxStatus.pending => const Color(0xFFD97706),
@@ -898,90 +906,95 @@ class _NgnTransactionTile extends StatelessWidget {
       AppTxStatus.failed => 'Failed',
     };
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F1F5),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: iconStyle.bg,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              iconStyle.icon,
-              size: 20,
-              color: iconStyle.fg,
-            ),
+    return Material(
+      color: const Color(0xFFF0F1F5),
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => TransactionDetailsScreen(tx: tx),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tx.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  tx.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+          child: Row(
             children: [
-              Text(
-                '${tx.isCredit ? '+' : '-'}₦${_formatBalance(tx.amount)}',
-                style: TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w700,
-                  color: amountColor,
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: iconStyle.bg,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(iconStyle.icon, size: 20, color: iconStyle.fg),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tx.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      tx.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 5),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  statusLabel,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: statusColor,
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    tx.amountLabel ??
+                        '${tx.isCredit ? '+' : '-'}₦${_formatBalance(tx.amount)}',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: amountColor,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      statusLabel,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: statusColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1113,4 +1126,3 @@ class _NavItem extends StatelessWidget {
     );
   }
 }
-

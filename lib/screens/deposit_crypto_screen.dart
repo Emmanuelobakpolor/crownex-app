@@ -7,6 +7,7 @@ import '../services/api_exception.dart';
 import '../services/crypto_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/auth_widgets.dart';
+import '../widgets/auto_convert_tile.dart';
 
 /// Deposit Crypto — select token/network, fetch and show the real Quidax
 /// deposit address (QR + copy).
@@ -439,6 +440,20 @@ class _DepositDetailsView extends StatelessWidget {
                 'Deposits are credited automatically once confirmed on-chain — this can take a few minutes.',
               ),
             ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: AutoConvertTile(
+            subtitleBuilder: (enabled) => switch (enabled) {
+              true => 'Deposits to this address will be converted to NGN automatically.',
+              false => "You'll keep this as crypto.",
+              null => 'Sell incoming crypto at the live rate',
+            },
           ),
         ),
       ],
