@@ -876,10 +876,35 @@ class _RecentTransactionsHeader extends StatelessWidget {
         fg: const Color(0xFFD4A017),
       );
     case AppTxCategory.cryptoDeposit:
+    case AppTxCategory.cryptoSwap:
       return (
         icon: Icons.currency_exchange_rounded,
         bg: const Color(0xFFFFF1D6),
         fg: const Color(0xFFE59A0B),
+      );
+    case AppTxCategory.cryptoBuy:
+      return (
+        icon: Icons.currency_bitcoin_rounded,
+        bg: const Color(0xFFFFF1D6),
+        fg: const Color(0xFFE59A0B),
+      );
+    case AppTxCategory.cryptoSell:
+      return (
+        icon: Icons.sell_rounded,
+        bg: const Color(0xFFFFF1D6),
+        fg: const Color(0xFFE59A0B),
+      );
+    case AppTxCategory.cryptoWithdrawal:
+      return (
+        icon: Icons.send_rounded,
+        bg: const Color(0xFFFFF1D6),
+        fg: const Color(0xFFE59A0B),
+      );
+    case AppTxCategory.giftCard:
+      return (
+        icon: Icons.card_giftcard_rounded,
+        bg: const Color(0xFFEDE4FF),
+        fg: const Color(0xFF7C3AED),
       );
   }
 }

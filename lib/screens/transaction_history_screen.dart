@@ -31,7 +31,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) setState(() {});
     });
@@ -77,8 +77,14 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
             .toList();
       case 2:
         return _transactions
-            .where((t) => t.category == AppTxCategory.withdrawal)
+            .where(
+              (t) =>
+                  t.category == AppTxCategory.withdrawal ||
+                  t.category == AppTxCategory.cryptoWithdrawal,
+            )
             .toList();
+      case 3:
+        return _transactions.where((t) => t.isCrypto).toList();
       default:
         return _transactions;
     }
@@ -144,6 +150,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                   Tab(text: 'All'),
                   Tab(text: 'Deposits'),
                   Tab(text: 'Withdrawals'),
+                  Tab(text: 'Crypto'),
                 ],
               ),
               Expanded(
@@ -260,7 +267,7 @@ class _TransactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCrypto = tx.category == AppTxCategory.cryptoDeposit;
+    final isCrypto = tx.isCrypto;
     final amountColor = tx.isCredit
         ? const Color(0xFF16A34A)
         : const Color(0xFFDC2626);
@@ -293,7 +300,15 @@ class _TransactionRow extends StatelessWidget {
                 ),
                 child: Icon(
                   isCrypto
-                      ? Icons.currency_exchange_rounded
+                      ? switch (tx.category) {
+                          AppTxCategory.cryptoBuy =>
+                            Icons.currency_bitcoin_rounded,
+                          AppTxCategory.cryptoSell => Icons.sell_rounded,
+                          AppTxCategory.cryptoWithdrawal => Icons.send_rounded,
+                          _ => Icons.currency_exchange_rounded,
+                        }
+                      : tx.category == AppTxCategory.giftCard
+                      ? Icons.card_giftcard_rounded
                       : tx.isCredit
                       ? Icons.arrow_downward_rounded
                       : Icons.arrow_upward_rounded,
