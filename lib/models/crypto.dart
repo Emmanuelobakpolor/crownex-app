@@ -525,3 +525,97 @@ class WithdrawEstimate {
     );
   }
 }
+
+/// One chain a coin can be sent on — [code] goes back to the backend as-is.
+class WithdrawNetwork {
+  const WithdrawNetwork({required this.code, required this.label});
+
+  final String code;
+  final String label;
+
+  factory WithdrawNetwork.fromJson(Map<String, dynamic> json) {
+    final code = json['code'] as String? ?? '';
+    return WithdrawNetwork(code: code, label: json['label'] as String? ?? code);
+  }
+}
+
+/// A withdrawable coin with the user's balance and what they can send now.
+/// Rate-derived fields are null while Quidax has no live price for the coin.
+class WithdrawCoinOption {
+  const WithdrawCoinOption({
+    required this.coin,
+    required this.networks,
+    required this.available,
+    this.availableNgn,
+    this.availableUsd,
+    this.rateUsd,
+    this.minAmount,
+    this.maxAmount,
+    this.maxAmountRaw,
+  });
+
+  final CryptoCoin coin;
+  final List<WithdrawNetwork> networks;
+  final double available;
+  final double? availableNgn;
+  final double? availableUsd;
+  final double? rateUsd;
+  final double? minAmount;
+  final double? maxAmount;
+
+  /// The backend's exact max, for filling the amount field without float noise.
+  final String? maxAmountRaw;
+
+  String get symbol => coin.symbol;
+  double? get rateNgn => coin.rateNgn;
+
+  factory WithdrawCoinOption.fromJson(Map<String, dynamic> json) {
+    final symbol = json['coin'] as String? ?? '';
+    return WithdrawCoinOption(
+      coin: CryptoCoin(
+        symbol: symbol,
+        name: json['name'] as String? ?? symbol.toUpperCase(),
+        rateNgn: _parseNullable(json['rate_ngn']),
+        logoUrl: json['logo_url'] as String? ?? '',
+        color: json['color'] as String? ?? '#0052FF',
+        letter: json['letter'] as String? ?? '?',
+      ),
+      networks: ((json['networks'] as List?) ?? const [])
+          .map((n) => WithdrawNetwork.fromJson(n as Map<String, dynamic>))
+          .toList(),
+      available: _parse(json['available']),
+      availableNgn: _parseNullable(json['available_ngn']),
+      availableUsd: _parseNullable(json['available_usd']),
+      rateUsd: _parseNullable(json['rate_usd']),
+      minAmount: _parseNullable(json['min_amount']),
+      maxAmount: _parseNullable(json['max_amount']),
+      maxAmountRaw: json['max_amount'] as String?,
+    );
+  }
+}
+
+/// GET /crypto/withdraw/options/ — what the send screen offers.
+class WithdrawOptions {
+  const WithdrawOptions({
+    required this.usdRateNgn,
+    required this.dailyLimitNgn,
+    required this.dailyRemainingNgn,
+    required this.coins,
+  });
+
+  final double usdRateNgn;
+  final double dailyLimitNgn;
+  final double dailyRemainingNgn;
+  final List<WithdrawCoinOption> coins;
+
+  factory WithdrawOptions.fromJson(Map<String, dynamic> json) {
+    return WithdrawOptions(
+      usdRateNgn: _parse(json['usd_rate_ngn']),
+      dailyLimitNgn: _parse(json['daily_limit_ngn']),
+      dailyRemainingNgn: _parse(json['daily_remaining_ngn']),
+      coins: ((json['coins'] as List?) ?? const [])
+          .map((c) => WithdrawCoinOption.fromJson(c as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}

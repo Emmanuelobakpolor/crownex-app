@@ -23,6 +23,17 @@ String _fmt(double v, {int decimals = 2}) {
 
 String _fmtNgn(double v) => '₦${_fmt(v)}';
 
+String _fmtUsd(double v) => '\$${_fmt(v)}';
+
+/// Coin amount with up to 8 decimals, trailing zeros trimmed.
+String _fmtCoin(double v) {
+  if (v == 0) return '0';
+  final fixed = v.toStringAsFixed(8).replaceFirst(RegExp(r'\.?0+$'), '');
+  final parts = fixed.split('.');
+  final whole = _fmt(double.parse(parts[0]), decimals: 0);
+  return parts.length > 1 ? '$whole.${parts[1]}' : whole;
+}
+
 /// Transfer Crypto — an on-chain withdrawal. No quote/lock like buy/sell/
 /// swap; the fee estimate is fetched live and re-confirmed at submission.
 class TransferCryptoScreen extends StatefulWidget {
@@ -36,12 +47,12 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
   final _crypto = CryptoService.instance;
 
   bool _cryptoMode = true;
-  List<CryptoCoin> _coins = const [];
+  WithdrawOptions? _options;
   bool _loadingCoins = true;
   String? _coinsError;
 
-  CryptoCoin? _token;
-  String? _network;
+  WithdrawCoinOption? _token;
+  WithdrawNetwork? _network;
   final _addressController = TextEditingController();
   final _qtyController = TextEditingController();
   bool _submitting = false;
@@ -65,10 +76,14 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
       _coinsError = null;
     });
     try {
-      final coins = await _crypto.getPrices();
+      final options = await _crypto.getWithdrawOptions();
       if (!mounted) return;
       setState(() {
-        _coins = coins;
+        _options = options;
+        // Keep the picked coin, with its refreshed balance and limits.
+        final picked = _token?.symbol;
+        _token = picked == null ? null : options.coins.where((c) => c.symbol == picked).firstOrNull;
+        if (_token == null) _network = null;
         _loadingCoins = false;
       });
     } on ApiException catch (e) {
@@ -86,12 +101,26 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
     }
   }
 
-  bool get _needsNetwork => _token != null && kCryptoCoinNetworks.containsKey(_token!.symbol);
-
   double? get _quantity {
     final raw = _qtyController.text.replaceAll(',', '').trim();
     if (raw.isEmpty) return null;
     return double.tryParse(raw);
+  }
+
+  /// Why the entered amount can't be sent, or null when it can (or nothing is entered).
+  String? get _amountError {
+    final token = _token;
+    final qty = _quantity;
+    if (token == null || qty == null || qty <= 0) return null;
+    final symbol = token.symbol.toUpperCase();
+    if (qty > token.available) return 'Insufficient balance. You have ${_fmtCoin(token.available)} $symbol.';
+    final min = token.minAmount;
+    if (min != null && qty < min) return 'Minimum you can send is ${_fmtCoin(min)} $symbol.';
+    final max = token.maxAmount;
+    if (max != null && qty > max) {
+      return 'Maximum you can send right now is ${_fmtCoin(max)} $symbol (daily limit).';
+    }
+    return null;
   }
 
   bool get _canContinue {
@@ -99,10 +128,11 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
     final qty = _quantity;
     final address = _addressController.text.trim();
     return _token != null &&
-        (!_needsNetwork || _network != null) &&
+        _network != null &&
         address.length >= 10 &&
         qty != null &&
         qty > 0 &&
+        _amountError == null &&
         !_submitting;
   }
 
@@ -114,32 +144,45 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
   }
 
   Future<void> _pickToken() async {
-    final selected = await _showOptionsSheet<CryptoCoin>(
+    final coins = _options?.coins ?? const <WithdrawCoinOption>[];
+    final selected = await _showOptionsSheet<WithdrawCoinOption>(
       title: 'Select Token',
-      items: _coins,
+      items: coins,
       labelOf: (t) => t.symbol.toUpperCase(),
-      subtitleOf: (t) => t.name,
+      subtitleOf: (t) => t.coin.name,
       isSelected: (t) => t.symbol == _token?.symbol,
-      leadingOf: (t) => _TokenDot(coin: t, size: 32),
+      leadingOf: (t) => _TokenDot(coin: t.coin, size: 32),
+      trailingOf: (t) => _BalanceColumn(option: t),
     );
-    if (selected != null) {
+    if (selected != null && selected.symbol != _token?.symbol) {
       setState(() {
         _token = selected;
-        _network = kCryptoCoinNetworks[selected.symbol]?.first;
+        // Only a coin with a single chain gets one picked for the user —
+        // sending on the wrong chain can lose the funds.
+        _network = selected.networks.length == 1 ? selected.networks.first : null;
       });
     }
   }
 
   Future<void> _pickNetwork() async {
-    final options = _token != null ? kCryptoCoinNetworks[_token!.symbol] : null;
-    if (options == null) return;
-    final selected = await _showOptionsSheet<String>(
+    final options = _token?.networks;
+    if (options == null || options.isEmpty) return;
+    final selected = await _showOptionsSheet<WithdrawNetwork>(
       title: 'Select Network',
       items: options,
-      labelOf: (n) => n,
-      isSelected: (n) => n == _network,
+      labelOf: (n) => n.label,
+      isSelected: (n) => n.code == _network?.code,
     );
     if (selected != null) setState(() => _network = selected);
+  }
+
+  void _fillMax() {
+    final raw = _token?.maxAmountRaw;
+    if (raw == null) return;
+    final max = double.tryParse(raw) ?? 0;
+    final trimmed = raw.contains('.') ? raw.replaceFirst(RegExp(r'\.?0+$'), '') : raw;
+    _qtyController.text = max > 0 ? trimmed : '0';
+    setState(() {});
   }
 
   Future<T?> _showOptionsSheet<T>({
@@ -149,6 +192,7 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
     String Function(T)? subtitleOf,
     required bool Function(T) isSelected,
     Widget Function(T)? leadingOf,
+    Widget Function(T)? trailingOf,
   }) {
     return showModalBottomSheet<T>(
       context: context,
@@ -187,6 +231,9 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
                   children: items.map((item) {
                     final selected = isSelected(item);
                     return ListTile(
+                      selected: selected,
+                      selectedTileColor: AppColors.primary.withValues(alpha: 0.06),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       leading: leadingOf?.call(item),
                       title: Text(
                         labelOf(item),
@@ -201,9 +248,8 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
                               style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                             )
                           : null,
-                      trailing: selected
-                          ? const Icon(Icons.check_rounded, color: AppColors.primary)
-                          : null,
+                      trailing: trailingOf?.call(item) ??
+                          (selected ? const Icon(Icons.check_rounded, color: AppColors.primary) : null),
                       onTap: () => Navigator.of(ctx).pop(item),
                     );
                   }).toList(),
@@ -219,6 +265,7 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
   Future<void> _onContinue() async {
     if (!_canContinue) return;
     final token = _token!;
+    final network = _network!;
     final address = _addressController.text.trim();
     final qty = _quantity!;
 
@@ -247,8 +294,9 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
       barrierColor: Colors.black.withValues(alpha: 0.45),
       builder: (ctx) => _WithdrawSummarySheet(
         address: address,
-        network: _network,
+        network: network.label,
         estimate: estimate,
+        usdRateNgn: _options?.usdRateNgn,
       ),
     );
     if (confirmed != true || !mounted) return;
@@ -262,11 +310,12 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
     );
     if (pin == null || !mounted) return;
 
-    await _submitWithdrawal(token: token, address: address, amount: qty, pin: pin);
+    await _submitWithdrawal(token: token, network: network, address: address, amount: qty, pin: pin);
   }
 
   Future<void> _submitWithdrawal({
-    required CryptoCoin token,
+    required WithdrawCoinOption token,
+    required WithdrawNetwork network,
     required String address,
     required double amount,
     required String pin,
@@ -278,13 +327,14 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
         amount: amount,
         address: address,
         pin: pin,
-        network: _network,
+        network: network.code,
         idempotencyKey: _crypto.generateIdempotencyKey(),
       );
       if (!mounted) return;
       setState(() => _submitting = false);
 
       if (withdrawal.status == CryptoWithdrawalStatus.failed) {
+        _loadCoins();
         _showFailureDialog(
           withdrawal.note.isNotEmpty
               ? withdrawal.note
@@ -335,6 +385,7 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
+    final token = _token;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
@@ -357,24 +408,26 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
                       const SizedBox(height: 22),
                       if (!_cryptoMode)
                         const _FiatPlaceholder()
-                      else if (_loadingCoins)
+                      else if (_loadingCoins && _options == null)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 40),
                           child: Center(child: CircularProgressIndicator()),
                         )
-                      else if (_coinsError != null)
+                      else if (_coinsError != null && _options == null)
                         _ErrorState(message: _coinsError!, onRetry: _loadCoins)
                       else ...[
                         _SelectField(
-                          value: _token?.symbol.toUpperCase(),
+                          value: token?.symbol.toUpperCase(),
                           placeholder: 'Select Token',
                           onTap: _pickToken,
-                          leading: _token != null ? _TokenDot(coin: _token!, size: 24) : null,
+                          leading: token != null ? _TokenDot(coin: token.coin, size: 24) : null,
                         ),
-                        if (_needsNetwork) ...[
+                        if (token != null) ...[
+                          const SizedBox(height: 10),
+                          _BalanceCard(option: token),
                           const SizedBox(height: 14),
                           _SelectField(
-                            value: _network,
+                            value: _network?.label,
                             placeholder: 'Select Network',
                             onTap: _pickNetwork,
                           ),
@@ -394,7 +447,19 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
                             FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
                           ],
                           onChanged: (_) => setState(() {}),
+                          suffix: token?.maxAmountRaw != null
+                              ? TextButton(onPressed: _fillMax, child: const Text('Max'))
+                              : null,
                         ),
+                        if (token != null) ...[
+                          const SizedBox(height: 8),
+                          _AmountHints(
+                            option: token,
+                            quantity: _quantity,
+                            usdRateNgn: _options?.usdRateNgn,
+                            error: _amountError,
+                          ),
+                        ],
                       ],
                     ],
                   ),
@@ -426,6 +491,132 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
   }
 }
 
+// ─── Balance + limits ────────────────────────────────────────────────────────
+
+/// Right side of a token row in the picker: balance, then its USD/NGN value.
+class _BalanceColumn extends StatelessWidget {
+  const _BalanceColumn({required this.option});
+
+  final WithdrawCoinOption option;
+
+  @override
+  Widget build(BuildContext context) {
+    final usd = option.availableUsd;
+    final ngn = option.availableNgn;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          _fmtCoin(option.available),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+        ),
+        if (usd != null && ngn != null)
+          Text(
+            '${_fmtUsd(usd)} · ${_fmtNgn(ngn)}',
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+      ],
+    );
+  }
+}
+
+/// The picked coin's balance and its value, under the token field.
+class _BalanceCard extends StatelessWidget {
+  const _BalanceCard({required this.option});
+
+  final WithdrawCoinOption option;
+
+  @override
+  Widget build(BuildContext context) {
+    final symbol = option.symbol.toUpperCase();
+    final usd = option.availableUsd;
+    final ngn = option.availableNgn;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F6F8),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Text('Available', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          const Spacer(),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${_fmtCoin(option.available)} $symbol',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+              ),
+              if (usd != null && ngn != null)
+                Text(
+                  '≈ ${_fmtUsd(usd)} · ${_fmtNgn(ngn)}',
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Under the amount field: what the entered amount is worth, the min/max,
+/// and why it can't be sent when it can't.
+class _AmountHints extends StatelessWidget {
+  const _AmountHints({
+    required this.option,
+    required this.quantity,
+    required this.usdRateNgn,
+    required this.error,
+  });
+
+  final WithdrawCoinOption option;
+  final double? quantity;
+  final double? usdRateNgn;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    final symbol = option.symbol.toUpperCase();
+    final rate = option.rateNgn;
+    final qty = quantity;
+    final min = option.minAmount;
+    final max = option.maxAmount;
+    const hint = TextStyle(fontSize: 12.5, color: AppColors.textSecondary);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (qty != null && qty > 0 && rate != null && usdRateNgn != null && usdRateNgn! > 0)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              '≈ ${_fmtUsd(qty * rate / usdRateNgn!)} · ${_fmtNgn(qty * rate)}',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            ),
+          ),
+        if (min != null && max != null)
+          Text(
+            max < min
+                ? 'Minimum ${_fmtCoin(min)} $symbol — your balance is below the minimum.'
+                : 'Min ${_fmtCoin(min)} $symbol · Max ${_fmtCoin(max)} $symbol',
+            style: hint,
+          )
+        else
+          const Text('Live price unavailable — limits will be checked when you continue.', style: hint),
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(error!, style: const TextStyle(fontSize: 12.5, color: Color(0xFFDC2626))),
+          ),
+      ],
+    );
+  }
+}
+
 // ─── Summary sheet (fresh fee estimate, not locked) ─────────────────────────
 
 class _WithdrawSummarySheet extends StatelessWidget {
@@ -433,11 +624,13 @@ class _WithdrawSummarySheet extends StatelessWidget {
     required this.address,
     required this.network,
     required this.estimate,
+    this.usdRateNgn,
   });
 
   final String address;
   final String? network;
   final WithdrawEstimate estimate;
+  final double? usdRateNgn;
 
   String _shortAddress(String a) {
     if (a.length <= 14) return a;
@@ -518,7 +711,12 @@ class _WithdrawSummarySheet extends StatelessWidget {
                   valueBold: true,
                 ),
                 const SizedBox(height: 14),
-                _DetailRow(label: 'Est. Value:', value: _fmtNgn(estimate.notionalNgn)),
+                _DetailRow(
+                  label: 'Est. Value:',
+                  value: usdRateNgn != null && usdRateNgn! > 0
+                      ? '${_fmtUsd(estimate.notionalNgn / usdRateNgn!)} · ${_fmtNgn(estimate.notionalNgn)}'
+                      : _fmtNgn(estimate.notionalNgn),
+                ),
               ],
             ),
           ),
@@ -983,6 +1181,7 @@ class _TextInput extends StatelessWidget {
     required this.onChanged,
     this.keyboardType,
     this.inputFormatters,
+    this.suffix,
   });
 
   final TextEditingController controller;
@@ -990,6 +1189,7 @@ class _TextInput extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
+  final Widget? suffix;
 
   @override
   Widget build(BuildContext context) {
@@ -1010,6 +1210,7 @@ class _TextInput extends StatelessWidget {
           fontWeight: FontWeight.w400,
           color: AppColors.textMuted,
         ),
+        suffixIcon: suffix,
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),

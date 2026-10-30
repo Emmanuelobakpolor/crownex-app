@@ -188,6 +188,13 @@ class CryptoService {
     return CryptoDepositAddress.fromJson(data);
   }
 
+  /// GET /crypto/withdraw/options/ — withdrawable coins with balances,
+  /// networks and min/max amounts.
+  Future<WithdrawOptions> getWithdrawOptions() async {
+    final data = await _client.get('/crypto/withdraw/options/', auth: true);
+    return WithdrawOptions.fromJson(data);
+  }
+
   /// GET /crypto/withdraw/estimate/?coin=&amount= — no side effects.
   Future<WithdrawEstimate> estimateWithdrawal({
     required String coin,

@@ -2,17 +2,27 @@
 // purchases (crownex-backend/giftcards/urls.py).
 
 class GiftCardBrand {
-  const GiftCardBrand({required this.brandId, required this.brandName, this.logoUrl});
+  const GiftCardBrand({
+    required this.brandId,
+    required this.brandName,
+    this.logoUrl,
+    this.available = true,
+  });
 
   final int brandId;
   final String brandName;
   final String? logoUrl;
+
+  /// False when none of the brand's products can be bought right now
+  /// (inactive at Reloadly, or recently failed/refunded there).
+  final bool available;
 
   factory GiftCardBrand.fromJson(Map<String, dynamic> json) {
     return GiftCardBrand(
       brandId: json['brand_id'] as int? ?? 0,
       brandName: json['brand_name'] as String? ?? '',
       logoUrl: json['logo_url'] as String?,
+      available: json['available'] as bool? ?? true,
     );
   }
 }
@@ -27,10 +37,15 @@ class GiftCardProduct {
     this.minUsd,
     this.maxUsd,
     this.redeemInstruction,
+    this.available = true,
   });
 
   final int productId;
   final bool openRange;
+
+  /// False when this product can't be bought right now — the backend
+  /// rejects it, so the UI shouldn't offer it.
+  final bool available;
 
   /// Set when [openRange] is false — a fixed denomination.
   final double? unitPriceUsd;
@@ -52,6 +67,7 @@ class GiftCardProduct {
       minUsd: parse(json['min_usd']),
       maxUsd: parse(json['max_usd']),
       redeemInstruction: json['redeem_instruction'] as String?,
+      available: json['available'] as bool? ?? true,
     );
   }
 }

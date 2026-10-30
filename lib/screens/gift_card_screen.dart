@@ -86,6 +86,14 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
   List<GiftCardProduct> get _fixedProducts =>
       _products.where((p) => !p.openRange).toList();
 
+  /// Brand is out, or it loaded but none of its products can be bought.
+  bool get _brandUnavailable =>
+      _selectedBrand?.available == false ||
+      (!_productsLoading && _products.isNotEmpty && !_products.any((p) => p.available));
+
+  GiftCardBrand _defaultBrand(List<GiftCardBrand> brands) =>
+      brands.firstWhere((b) => b.available, orElse: () => brands.first);
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -107,7 +115,7 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
       });
 
       if (_brands.isNotEmpty) {
-        unawaited(_selectBrand(_brands.first));
+        unawaited(_selectBrand(_defaultBrand(_brands)));
       }
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -149,7 +157,7 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
         _brands = brands;
         _loading = false;
       });
-      if (brands.isNotEmpty) unawaited(_selectBrand(brands.first));
+      if (brands.isNotEmpty) unawaited(_selectBrand(_defaultBrand(brands)));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -177,11 +185,12 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
       );
       if (!mounted) return;
 
-      final fixed = products.where((p) => !p.openRange).toList();
+      final fixed = products.where((p) => !p.openRange && p.available).toList();
+      final openAvailable = products.any((p) => p.openRange && p.available);
       setState(() {
         _products = products;
         _selectedProduct = fixed.isNotEmpty ? fixed.first : null;
-        _usingCustomAmount = fixed.isEmpty && products.isNotEmpty;
+        _usingCustomAmount = fixed.isEmpty && openAvailable;
         _productsLoading = false;
       });
     } catch (e) {
@@ -235,11 +244,15 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
   bool get _canContinue {
     final usd = _usdAmount;
     if (usd == null || usd <= 0 || _selectedBrand == null) return false;
+    if (_brandUnavailable) return false;
 
     if (_usingCustomAmount) {
       final open = _openRangeProduct;
-      if (open?.minUsd == null || open?.maxUsd == null) return false;
-      if (usd < open!.minUsd! || usd > open.maxUsd!) return false;
+      if (open == null || !open.available) return false;
+      if (open.minUsd == null || open.maxUsd == null) return false;
+      if (usd < open.minUsd! || usd > open.maxUsd!) return false;
+    } else if (_selectedProduct?.available != true) {
+      return false;
     }
     return true;
   }
@@ -345,7 +358,19 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
           if (_brands.isEmpty)
             const Text('No brands available for this country.', style: TextStyle(color: AppColors.textMuted))
           else
-            _SelectedBrandCard(brand: _selectedBrand, onTap: _pickBrand),
+            _SelectedBrandCard(
+              brand: _selectedBrand,
+              unavailable: _brandUnavailable,
+              onTap: _pickBrand,
+            ),
+
+          if (_brandUnavailable) ...[
+            const SizedBox(height: 12),
+            const _InfoBanner(
+              text: 'This gift card is currently unavailable. Please choose another brand.',
+              icon: Icons.block_rounded,
+            ),
+          ],
 
           const SizedBox(height: 28),
           const Text('Select Amount', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
@@ -376,13 +401,14 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
 
                   return _DenominationCard(
                     usdLabel: _usdLabel(product.unitPriceUsd ?? 0),
-                    ngnLabel: _money(ngn),
+                    ngnLabel: product.available ? _money(ngn) : 'Unavailable',
                     selected: selected,
+                    enabled: product.available,
                     onTap: () => _onSelectDenomination(product),
                   );
                 },
               ),
-            if (open != null) ...[
+            if (open != null && open.available) ...[
               if (fixed.isNotEmpty) const SizedBox(height: 16),
               _OpenAmountField(
                 controller: _customAmountController,
@@ -532,9 +558,10 @@ class _CountryRow extends StatelessWidget {
 /// the full searchable picker rather than cramming every brand into a
 /// horizontal scroller.
 class _SelectedBrandCard extends StatelessWidget {
-  const _SelectedBrandCard({required this.brand, required this.onTap});
+  const _SelectedBrandCard({required this.brand, required this.unavailable, required this.onTap});
 
   final GiftCardBrand? brand;
+  final bool unavailable;
   final VoidCallback onTap;
 
   @override
@@ -584,8 +611,15 @@ class _SelectedBrandCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      selected != null ? 'Tap to change brand' : 'Choose from the gift card catalogue',
-                      style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                      selected == null
+                          ? 'Choose from the gift card catalogue'
+                          : unavailable
+                          ? 'Currently unavailable • Tap to change'
+                          : 'Tap to change brand',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: unavailable ? const Color(0xFFDC2626) : AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -741,7 +775,10 @@ class _BrandGridTile extends StatelessWidget {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  _BrandLogo(brand: brand, size: 48),
+                  Opacity(
+                    opacity: brand.available ? 1 : 0.4,
+                    child: _BrandLogo(brand: brand, size: 48),
+                  ),
                   if (selected)
                     Positioned(
                       right: -4,
@@ -769,9 +806,21 @@ class _BrandGridTile extends StatelessWidget {
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
                   height: 1.15,
-                  color: selected ? AppColors.primary : AppColors.textPrimary,
+                  color: selected
+                      ? AppColors.primary
+                      : brand.available
+                      ? AppColors.textPrimary
+                      : AppColors.textMuted,
                 ),
               ),
+              if (!brand.available)
+                const Padding(
+                  padding: EdgeInsets.only(top: 3),
+                  child: Text(
+                    'Unavailable',
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Color(0xFFDC2626)),
+                  ),
+                ),
             ],
           ),
         ),
@@ -818,19 +867,28 @@ class _DenominationCard extends StatelessWidget {
     required this.ngnLabel,
     required this.selected,
     required this.onTap,
+    this.enabled = true,
   });
 
   final String usdLabel;
   final String ngnLabel;
   final bool selected;
+  final bool enabled;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    return Opacity(
+      opacity: enabled ? 1 : 0.45,
+      child: _buildCard(),
+    );
+  }
+
+  Widget _buildCard() {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(18),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
