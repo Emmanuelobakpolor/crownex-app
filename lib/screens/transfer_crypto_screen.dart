@@ -149,7 +149,7 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
       title: 'Select Token',
       items: coins,
       labelOf: (t) => t.symbol.toUpperCase(),
-      subtitleOf: (t) => t.coin.name,
+      subtitleOf: (t) => t.networks.isEmpty ? '${t.coin.name} · temporarily unavailable' : t.coin.name,
       isSelected: (t) => t.symbol == _token?.symbol,
       leadingOf: (t) => _TokenDot(coin: t.coin, size: 32),
       trailingOf: (t) => _BalanceColumn(option: t),
@@ -426,11 +426,26 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
                           const SizedBox(height: 10),
                           _BalanceCard(option: token),
                           const SizedBox(height: 14),
-                          _SelectField(
-                            value: _network?.label,
-                            placeholder: 'Select Network',
-                            onTap: _pickNetwork,
-                          ),
+                          if (token.networks.isEmpty)
+                            _Notice(
+                              text: 'Sending ${token.symbol.toUpperCase()} is temporarily unavailable. '
+                                  'Please try again later.',
+                              warning: true,
+                            )
+                          else ...[
+                            _SelectField(
+                              value: _network?.label,
+                              placeholder: 'Select Network',
+                              onTap: _pickNetwork,
+                            ),
+                            if (_network != null) ...[
+                              const SizedBox(height: 8),
+                              _Notice(
+                                text: 'Only send to a ${token.symbol.toUpperCase()} address on '
+                                    '${_network!.label}. Sending on any other network can lose your funds.',
+                              ),
+                            ],
+                          ],
                         ],
                         const SizedBox(height: 14),
                         _TextInput(
@@ -492,6 +507,34 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
 }
 
 // ─── Balance + limits ────────────────────────────────────────────────────────
+
+class _Notice extends StatelessWidget {
+  const _Notice({required this.text, this.warning = false});
+
+  final String text;
+  final bool warning;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = warning ? const Color(0xFFB45309) : AppColors.textSecondary;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: warning ? const Color(0xFFFFF7ED) : const Color(0xFFF5F6F8),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline_rounded, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: TextStyle(fontSize: 12.5, height: 1.35, color: color))),
+        ],
+      ),
+    );
+  }
+}
 
 /// Right side of a token row in the picker: balance, then its USD/NGN value.
 class _BalanceColumn extends StatelessWidget {
