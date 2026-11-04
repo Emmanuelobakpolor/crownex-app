@@ -5,6 +5,7 @@ import '../models/crypto.dart';
 import '../services/api_exception.dart';
 import '../services/crypto_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 
 String _fmt(double v, {int decimals = 2}) {
@@ -83,7 +84,11 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
         // Keep the picked coin, with its refreshed balance and limits.
         final picked = _token?.symbol;
         _token = picked == null ? null : options.coins.where((c) => c.symbol == picked).firstOrNull;
-        if (_token == null) _network = null;
+        // Quidax turns networks on and off — drop a picked one it no longer allows.
+        final networks = _token?.networks ?? const <WithdrawNetwork>[];
+        if (!networks.any((n) => n.code == _network?.code)) {
+          _network = networks.length == 1 ? networks.first : null;
+        }
         _loadingCoins = false;
       });
     } on ApiException catch (e) {
@@ -107,6 +112,14 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
     return double.tryParse(raw);
   }
 
+  /// The larger of the coin's ₦ minimum and Quidax's minimum on the picked network.
+  double? get _minAmount {
+    final coinMin = _token?.minAmount;
+    final networkMin = _network?.minAmount;
+    if (coinMin == null || networkMin == null) return coinMin ?? networkMin;
+    return coinMin > networkMin ? coinMin : networkMin;
+  }
+
   /// Why the entered amount can't be sent, or null when it can (or nothing is entered).
   String? get _amountError {
     final token = _token;
@@ -114,7 +127,7 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
     if (token == null || qty == null || qty <= 0) return null;
     final symbol = token.symbol.toUpperCase();
     if (qty > token.available) return 'Insufficient balance. You have ${_fmtCoin(token.available)} $symbol.';
-    final min = token.minAmount;
+    final min = _minAmount;
     if (min != null && qty < min) return 'Minimum you can send is ${_fmtCoin(min)} $symbol.';
     final max = token.maxAmount;
     if (max != null && qty > max) {
@@ -203,8 +216,8 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
         final bottom = MediaQuery.paddingOf(ctx).bottom;
         return Container(
           constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * 0.75),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           padding: EdgeInsets.fromLTRB(8, 16, 8, 12 + bottom),
@@ -217,7 +230,7 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
@@ -245,7 +258,7 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
                       subtitle: subtitleOf != null
                           ? Text(
                               subtitleOf(item),
-                              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                             )
                           : null,
                       trailing: trailingOf?.call(item) ??
@@ -362,12 +375,18 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
       if (!mounted) return;
       setState(() => _submitting = false);
       _showSnack(e.message);
+      if (_networkChanged(e)) _loadCoins();
     } catch (_) {
       if (!mounted) return;
       setState(() => _submitting = false);
       _showSnack('Something went wrong. Please try again.');
     }
   }
+
+  /// The backend refused the network because Quidax's list moved on since
+  /// this screen loaded it.
+  static bool _networkChanged(ApiException e) =>
+      const {'unsupported_network', 'network_required', 'withdraw_unavailable'}.contains(e.code);
 
   void _showFailureDialog(String message) {
     showDialog<void>(
@@ -388,9 +407,9 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
     final token = _token;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: AppTheme.statusBarStyle.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         body: SafeArea(
           child: Column(
             children: [
@@ -470,6 +489,7 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
                           const SizedBox(height: 8),
                           _AmountHints(
                             option: token,
+                            minAmount: _minAmount,
                             quantity: _quantity,
                             usdRateNgn: _options?.usdRateNgn,
                             error: _amountError,
@@ -521,7 +541,7 @@ class _Notice extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: warning ? const Color(0xFFFFF7ED) : const Color(0xFFF5F6F8),
+        color: warning ? AppColors.tint(const Color(0xFFFFF7ED)) : AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -552,12 +572,12 @@ class _BalanceColumn extends StatelessWidget {
       children: [
         Text(
           _fmtCoin(option.available),
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
         ),
         if (usd != null && ngn != null)
           Text(
             '${_fmtUsd(usd)} · ${_fmtNgn(ngn)}',
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
       ],
     );
@@ -579,24 +599,24 @@ class _BalanceCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F6F8),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          const Text('Available', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          Text('Available', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
           const Spacer(),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
                 '${_fmtCoin(option.available)} $symbol',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
               ),
               if (usd != null && ngn != null)
                 Text(
                   '≈ ${_fmtUsd(usd)} · ${_fmtNgn(ngn)}',
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
             ],
           ),
@@ -611,12 +631,14 @@ class _BalanceCard extends StatelessWidget {
 class _AmountHints extends StatelessWidget {
   const _AmountHints({
     required this.option,
+    required this.minAmount,
     required this.quantity,
     required this.usdRateNgn,
     required this.error,
   });
 
   final WithdrawCoinOption option;
+  final double? minAmount;
   final double? quantity;
   final double? usdRateNgn;
   final String? error;
@@ -626,9 +648,9 @@ class _AmountHints extends StatelessWidget {
     final symbol = option.symbol.toUpperCase();
     final rate = option.rateNgn;
     final qty = quantity;
-    final min = option.minAmount;
+    final min = minAmount;
     final max = option.maxAmount;
-    const hint = TextStyle(fontSize: 12.5, color: AppColors.textSecondary);
+    final hint = TextStyle(fontSize: 12.5, color: AppColors.textSecondary);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -638,7 +660,7 @@ class _AmountHints extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 4),
             child: Text(
               '≈ ${_fmtUsd(qty * rate / usdRateNgn!)} · ${_fmtNgn(qty * rate)}',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
             ),
           ),
         if (min != null && max != null)
@@ -649,7 +671,7 @@ class _AmountHints extends StatelessWidget {
             style: hint,
           )
         else
-          const Text('Live price unavailable — limits will be checked when you continue.', style: hint),
+          Text('Live price unavailable — limits will be checked when you continue.', style: hint),
         if (error != null)
           Padding(
             padding: const EdgeInsets.only(top: 4),
@@ -686,8 +708,8 @@ class _WithdrawSummarySheet extends StatelessWidget {
     final coin = estimate.coin.toUpperCase();
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottom),
@@ -696,7 +718,7 @@ class _WithdrawSummarySheet extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Transfer Summary',
                   style: TextStyle(
@@ -708,12 +730,12 @@ class _WithdrawSummarySheet extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(false),
-                child: const Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
+                child: Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
             child: Text(
               'Please preview the details below for your transfer',
@@ -725,7 +747,7 @@ class _WithdrawSummarySheet extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F6F8),
+              color: AppColors.surfaceMuted,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Column(
@@ -808,8 +830,8 @@ class _TransactionPinSheetState extends State<_TransactionPinSheet> {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 20, 24, 16 + bottom),
@@ -818,7 +840,7 @@ class _TransactionPinSheetState extends State<_TransactionPinSheet> {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Enter Your Transaction PIN',
                   style: TextStyle(
@@ -830,7 +852,7 @@ class _TransactionPinSheetState extends State<_TransactionPinSheet> {
               ),
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
-                child: const Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
+                child: Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -865,7 +887,7 @@ class _TransactionPinSheetState extends State<_TransactionPinSheet> {
             }),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Enter 4-digit PIN to confirm',
             style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
@@ -912,7 +934,7 @@ class _PinKeypad extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Material(
-                    color: const Color(0xFFF5F6F8),
+                    color: AppColors.surfaceMuted,
                     borderRadius: BorderRadius.circular(12),
                     child: InkWell(
                       onTap: () => isBack ? onBackspace() : onDigit(key),
@@ -921,14 +943,14 @@ class _PinKeypad extends StatelessWidget {
                         height: 48,
                         child: Center(
                           child: isBack
-                              ? const Icon(
+                              ? Icon(
                                   Icons.backspace_outlined,
                                   size: 20,
                                   color: AppColors.textPrimary,
                                 )
                               : Text(
                                   key,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimary,
@@ -962,8 +984,8 @@ class _TransferSubmittedSheet extends StatelessWidget {
     final coin = withdrawal.coin.toUpperCase();
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 28, 24, 16 + bottom),
@@ -974,20 +996,20 @@ class _TransferSubmittedSheet extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F8EF),
+              color: AppColors.tint(const Color(0xFFE8F8EF)),
               shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFF22C55E), width: 2),
             ),
             child: const Icon(Icons.check_rounded, size: 30, color: Color(0xFF16A34A)),
           ),
           const SizedBox(height: 18),
-          const Text(
+          Text(
             'Withdrawal Submitted',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             'You sent',
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
@@ -1000,10 +1022,10 @@ class _TransferSubmittedSheet extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
-                top: BorderSide(color: Color(0xFFEEF0F4)),
-                bottom: BorderSide(color: Color(0xFFEEF0F4)),
+                top: BorderSide(color: AppColors.border),
+                bottom: BorderSide(color: AppColors.border),
               ),
             ),
             child: Column(
@@ -1028,7 +1050,7 @@ class _TransferSubmittedSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Your withdrawal is on its way. This can take a few minutes to confirm on-chain — '
             'check your transaction history for updates.',
             textAlign: TextAlign.center,
@@ -1062,7 +1084,7 @@ class _Header extends StatelessWidget {
             Align(alignment: Alignment.centerLeft, child: AuthBackButton(onPressed: onBack)),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
@@ -1086,7 +1108,7 @@ class _CryptoFiatTabs extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F1F5),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -1152,7 +1174,7 @@ class _SelectField extends StatelessWidget {
   Widget build(BuildContext context) {
     final has = value != null && value!.isNotEmpty;
     return Material(
-      color: Colors.white,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -1177,7 +1199,7 @@ class _SelectField extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
+              Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
             ],
           ),
         ),
@@ -1241,29 +1263,29 @@ class _TextInput extends StatelessWidget {
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
       onChanged: onChanged,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
       ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w400,
           color: AppColors.textMuted,
         ),
         suffixIcon: suffix,
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border, width: 1.2),
+          borderSide: BorderSide(color: AppColors.border, width: 1.2),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border, width: 1.2),
+          borderSide: BorderSide(color: AppColors.border, width: 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -1287,7 +1309,7 @@ class _DetailRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+          child: Text(label, style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
         ),
         Flexible(
           child: Text(
@@ -1317,7 +1339,7 @@ class _SecondaryButton extends StatelessWidget {
       width: double.infinity,
       height: 56,
       child: Material(
-        color: const Color(0xFFD6DEFF),
+        color: AppColors.tint(const Color(0xFFD6DEFF), strength: 0.3),
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onPressed,
@@ -1347,10 +1369,10 @@ class _FiatPlaceholder extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F6F8),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Column(
+      child: Column(
         children: [
           Icon(Icons.account_balance_rounded, size: 40, color: AppColors.textMuted),
           SizedBox(height: 12),
@@ -1386,17 +1408,17 @@ class _ErrorState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F6F8),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
-          const Icon(Icons.error_outline_rounded, size: 36, color: AppColors.textMuted),
+          Icon(Icons.error_outline_rounded, size: 36, color: AppColors.textMuted),
           const SizedBox(height: 12),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
           TextButton(onPressed: onRetry, child: const Text('Retry')),

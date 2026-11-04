@@ -7,6 +7,7 @@ import '../models/crypto.dart';
 import '../services/api_exception.dart';
 import '../services/crypto_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 
 String _fmt(double v, {int? decimals}) {
@@ -308,9 +309,9 @@ class _SwapCryptoScreenState extends State<SwapCryptoScreen> {
         : 'Balance 0.0';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: AppTheme.statusBarStyle.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         body: SafeArea(
           child: Column(
             children: [
@@ -330,7 +331,7 @@ class _SwapCryptoScreenState extends State<SwapCryptoScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    const Expanded(
+                                    Expanded(
                                       child: Text(
                                         'Swap From:',
                                         style: TextStyle(
@@ -342,7 +343,7 @@ class _SwapCryptoScreenState extends State<SwapCryptoScreen> {
                                     ),
                                     Text(
                                       fromBalance,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
                                         color: AppColors.textSecondary,
@@ -363,7 +364,7 @@ class _SwapCryptoScreenState extends State<SwapCryptoScreen> {
                                 const SizedBox(height: 8),
                                 Center(
                                   child: Material(
-                                    color: const Color(0xFFEEF2FF),
+                                    color: AppColors.tint(const Color(0xFFEEF2FF)),
                                     shape: const CircleBorder(),
                                     child: InkWell(
                                       customBorder: const CircleBorder(),
@@ -380,7 +381,7 @@ class _SwapCryptoScreenState extends State<SwapCryptoScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                const Text(
+                                Text(
                                   'Swap To:',
                                   style: TextStyle(
                                     fontSize: 15,
@@ -461,8 +462,8 @@ class _SwapQuoteSheetState extends State<_SwapQuoteSheet> {
     final expired = _secondsLeft <= 0;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottom),
@@ -472,7 +473,7 @@ class _SwapQuoteSheetState extends State<_SwapQuoteSheet> {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Confirm Swap',
                   style: TextStyle(
@@ -484,7 +485,7 @@ class _SwapQuoteSheetState extends State<_SwapQuoteSheet> {
               ),
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(false),
-                child: const Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
+                child: Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -512,7 +513,7 @@ class _SwapQuoteSheetState extends State<_SwapQuoteSheet> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F6F8),
+              color: AppColors.surfaceMuted,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Column(
@@ -577,8 +578,8 @@ class _TransactionPinSheetState extends State<_TransactionPinSheet> {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 20, 24, 16 + bottom),
@@ -587,7 +588,7 @@ class _TransactionPinSheetState extends State<_TransactionPinSheet> {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Enter Your Transaction PIN',
                   style: TextStyle(
@@ -599,7 +600,7 @@ class _TransactionPinSheetState extends State<_TransactionPinSheet> {
               ),
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
-                child: const Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
+                child: Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -634,7 +635,7 @@ class _TransactionPinSheetState extends State<_TransactionPinSheet> {
             }),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Enter 4-digit PIN to confirm',
             style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
@@ -681,7 +682,7 @@ class _PinKeypad extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Material(
-                    color: const Color(0xFFF5F6F8),
+                    color: AppColors.surfaceMuted,
                     borderRadius: BorderRadius.circular(12),
                     child: InkWell(
                       onTap: () => isBack ? onBackspace() : onDigit(key),
@@ -690,14 +691,14 @@ class _PinKeypad extends StatelessWidget {
                         height: 48,
                         child: Center(
                           child: isBack
-                              ? const Icon(
+                              ? Icon(
                                   Icons.backspace_outlined,
                                   size: 20,
                                   color: AppColors.textPrimary,
                                 )
                               : Text(
                                   key,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimary,
@@ -758,8 +759,8 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
 
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.75),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(16, 16, 16, 12 + bottom),
@@ -768,7 +769,7 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Select Token',
                   style: TextStyle(
@@ -780,12 +781,12 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
               ),
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
-                child: const Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
+                child: Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             "Kindly select the token you'll love to swap",
             style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
@@ -795,14 +796,14 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
             onChanged: (v) => setState(() => _query = v),
             decoration: InputDecoration(
               hintText: 'Search token name',
-              hintStyle: const TextStyle(fontSize: 15, color: AppColors.textMuted),
-              prefixIcon: const Icon(
+              hintStyle: TextStyle(fontSize: 15, color: AppColors.textMuted),
+              prefixIcon: Icon(
                 Icons.search_rounded,
                 color: AppColors.textMuted,
                 size: 22,
               ),
               filled: true,
-              fillColor: const Color(0xFFF5F6F8),
+              fillColor: AppColors.surfaceMuted,
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -815,7 +816,7 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
             child: ListView.separated(
               itemCount: filtered.length,
               separatorBuilder: (context, index) =>
-                  const Divider(height: 1, color: Color(0xFFEEF0F4)),
+                  Divider(height: 1, color: AppColors.border),
               itemBuilder: (context, index) {
                 final token = filtered[index];
                 final selected = widget.selected?.symbol == token.symbol;
@@ -834,7 +835,7 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
                             children: [
                               Text(
                                 token.symbol.toUpperCase(),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimary,
@@ -842,7 +843,7 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
                               ),
                               Text(
                                 token.name,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   color: AppColors.textSecondary,
                                 ),
@@ -852,7 +853,7 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
                         ),
                         Text(
                           _fmt(balance),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textSecondary,
@@ -896,8 +897,8 @@ class _SwapSuccessSheet extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 32, 24, 16 + bottom),
@@ -914,7 +915,7 @@ class _SwapSuccessSheet extends StatelessWidget {
             child: const Icon(Icons.check_rounded, size: 36, color: AppColors.primary),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Swap Successful!',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -924,7 +925,7 @@ class _SwapSuccessSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Your transaction has been completed, you\n'
             'have successfully swapped your tokens.',
             textAlign: TextAlign.center,
@@ -967,7 +968,7 @@ class _Header extends StatelessWidget {
             Align(alignment: Alignment.centerLeft, child: AuthBackButton(onPressed: onBack)),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
@@ -1021,7 +1022,7 @@ class _TokenSelectField extends StatelessWidget {
   Widget build(BuildContext context) {
     final has = token != null;
     return Material(
-      color: Colors.white,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -1049,7 +1050,7 @@ class _TokenSelectField extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
+              Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
             ],
           ),
         ),
@@ -1071,28 +1072,28 @@ class _AmountField extends StatelessWidget {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onChanged: onChanged,
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))],
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
       ),
       decoration: InputDecoration(
         hintText: 'Enter amount',
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w400,
           color: AppColors.textMuted,
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border, width: 1.2),
+          borderSide: BorderSide(color: AppColors.border, width: 1.2),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border, width: 1.2),
+          borderSide: BorderSide(color: AppColors.border, width: 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -1114,11 +1115,11 @@ class _SummaryRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+          child: Text(label, style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
         ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
@@ -1141,7 +1142,7 @@ class _SecondaryButton extends StatelessWidget {
       width: double.infinity,
       height: 56,
       child: Material(
-        color: const Color(0xFFD6DEFF),
+        color: AppColors.tint(const Color(0xFFD6DEFF), strength: 0.3),
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onPressed,
@@ -1174,17 +1175,17 @@ class _ErrorState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F6F8),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
-          const Icon(Icons.error_outline_rounded, size: 36, color: AppColors.textMuted),
+          Icon(Icons.error_outline_rounded, size: 36, color: AppColors.textMuted),
           const SizedBox(height: 12),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
           TextButton(onPressed: onRetry, child: const Text('Retry')),

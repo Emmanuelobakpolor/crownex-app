@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import 'contact_support_screen.dart';
 
@@ -225,7 +226,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     final filtered = _filtered;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: AppTheme.statusBarStyle.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
@@ -291,19 +292,19 @@ class _SearchField extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       textInputAction: TextInputAction.search,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
       ),
       decoration: InputDecoration(
         hintText: 'Search help articles…',
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           fontSize: 15,
           color: AppColors.textMuted,
           fontWeight: FontWeight.w400,
         ),
-        prefixIcon: const Icon(
+        prefixIcon: Icon(
           Icons.search_rounded,
           color: AppColors.textMuted,
           size: 22,
@@ -313,11 +314,11 @@ class _SearchField extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -358,7 +359,7 @@ class _CategoryCard extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: category.iconBg,
+                    color: AppColors.tint(category.iconBg),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(category.icon, size: 18, color: category.iconColor),
@@ -366,7 +367,7 @@ class _CategoryCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   category.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -407,7 +408,7 @@ class _FaqTile extends StatelessWidget {
             : null,
         title: Text(
           item.question,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
@@ -419,7 +420,7 @@ class _FaqTile extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               item.answer,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13.5,
                 height: 1.5,
                 color: AppColors.textSecondary,
@@ -444,7 +445,7 @@ class _EmptySearch extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const Column(
+      child: Column(
         children: [
           Icon(Icons.search_off_rounded, size: 40, color: AppColors.textMuted),
           SizedBox(height: 12),

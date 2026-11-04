@@ -6,6 +6,7 @@ import '../services/api_exception.dart';
 import '../services/auth_service.dart';
 import '../services/user_session.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import 'welcome_success_screen.dart';
 
@@ -112,7 +113,7 @@ class _SetTransactionPinScreenState extends State<SetTransactionPinScreen> {
     final canConfirm = _pin.length == 4;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 
 class LegalSection {
@@ -31,7 +32,7 @@ class LegalDocumentScreen extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: AppTheme.statusBarStyle.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
@@ -53,7 +54,7 @@ class LegalDocumentScreen extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE0E7FF),
+                        color: AppColors.tint(const Color(0xFFE0E7FF)),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
@@ -104,7 +105,7 @@ class LegalDocumentScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 18),
-                    const Center(
+                    Center(
                       child: Text(
                         'Crownex v1.0.0',
                         style: TextStyle(
@@ -140,7 +141,7 @@ class _SectionBlock extends StatelessWidget {
         children: [
           Text(
             '$index. ${section.heading}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15.5,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
@@ -150,7 +151,7 @@ class _SectionBlock extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             section.body,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13.5,
               height: 1.55,
               fontWeight: FontWeight.w400,

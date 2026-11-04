@@ -6,6 +6,7 @@ import '../services/api_exception.dart';
 import '../services/auth_service.dart';
 import '../services/user_session.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 
 enum _PinStep { current, newPin, confirmPin }
@@ -163,7 +164,7 @@ class _ChangeTransactionPinScreenState
     final copy = _copy;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: AppTheme.statusBarStyle.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(

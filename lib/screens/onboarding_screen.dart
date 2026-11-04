@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import 'sign_in_screen.dart';
 import 'sign_up_screen.dart';
 
@@ -82,7 +83,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
@@ -131,7 +132,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: Text.rich(
                           TextSpan(
                             text: 'Already have an account? ',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w400,

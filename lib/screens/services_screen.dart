@@ -201,7 +201,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(20, 20, 20, 4),
                 child: Text(
@@ -215,7 +215,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(20, 0, 20, 18),
                 child: Text(
@@ -330,8 +330,10 @@ class _PromoCarouselState extends State<_PromoCarousel> {
                 height: 6,
                 decoration: BoxDecoration(
                   color: _page == i
-                      ? const Color(0xFF041B6B)
-                      : const Color(0xFF041B6B).withValues(alpha: 0.18),
+                      ? (AppColors.isDark ? AppColors.primary : const Color(0xFF041B6B))
+                      : AppColors.isDark
+                          ? AppColors.textMuted.withValues(alpha: 0.4)
+                          : const Color(0xFF041B6B).withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
@@ -477,7 +479,7 @@ class _ServiceSection extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: AppColors.textSecondary,
@@ -503,7 +505,7 @@ class _ServiceSection extends StatelessWidget {
                 for (var i = 0; i < entries.length; i++) ...[
                   _ServiceRow(entry: entries[i]),
                   if (i < entries.length - 1)
-                    const Divider(height: 1, indent: 68, color: Color(0xFFF0F1F5)),
+                    Divider(height: 1, indent: 68, color: AppColors.surfaceMuted),
                 ],
               ],
             ),
@@ -545,7 +547,7 @@ class _ServiceRow extends StatelessWidget {
                   children: [
                     Text(
                       entry.label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -556,12 +558,12 @@ class _ServiceRow extends StatelessWidget {
                       entry.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+                      style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 22),
+              Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 22),
             ],
           ),
         ),

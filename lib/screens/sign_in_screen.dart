@@ -209,7 +209,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     child: Text.rich(
                       TextSpan(
                         text: "Don't have an account? ",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           color: AppColors.textPrimary,
                         ),

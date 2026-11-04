@@ -6,6 +6,7 @@ import '../models/crypto.dart';
 import '../services/api_exception.dart';
 import '../services/crypto_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import '../widgets/auto_convert_tile.dart';
 
@@ -167,11 +168,11 @@ class _DepositCryptoScreenState extends State<DepositCryptoScreen> {
         setState(() => _address = null);
       },
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.dark.copyWith(
+        value: AppTheme.statusBarStyle.copyWith(
           statusBarColor: Colors.transparent,
         ),
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.surface,
           body: SafeArea(
             child: Column(
               children: [
@@ -310,7 +311,7 @@ class _DepositDetailsView extends StatelessWidget {
           _SelectField(value: network, placeholder: 'Select Network', onTap: onPickToken),
         ],
         const SizedBox(height: 28),
-        const Center(
+        Center(
           child: Text(
             'Scan to send token or copy address to pay',
             textAlign: TextAlign.center,
@@ -338,7 +339,7 @@ class _DepositDetailsView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
+        Text(
           'Wallet Address',
           style: TextStyle(
             fontSize: 14,
@@ -351,7 +352,7 @@ class _DepositDetailsView extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
           decoration: BoxDecoration(
-            color: const Color(0xFFF5F6F8),
+            color: AppColors.surfaceMuted,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -359,7 +360,7 @@ class _DepositDetailsView extends StatelessWidget {
               Expanded(
                 child: Text(
                   address.address,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     height: 1.35,
@@ -369,7 +370,7 @@ class _DepositDetailsView extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Material(
-                color: const Color(0xFFEEF2FF),
+                color: AppColors.tint(const Color(0xFFEEF2FF)),
                 borderRadius: BorderRadius.circular(20),
                 child: InkWell(
                   onTap: onCopy,
@@ -406,7 +407,7 @@ class _DepositDetailsView extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFFEEF2FF),
+            color: AppColors.tint(const Color(0xFFEEF2FF)),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
@@ -523,8 +524,8 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
 
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.72),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(16, 16, 16, 12 + bottom),
@@ -533,7 +534,7 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Select Token',
                   style: TextStyle(
@@ -550,7 +551,7 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             "Kindly select the token you'll love to deposit",
             style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
@@ -560,14 +561,14 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
             onChanged: (v) => setState(() => _query = v),
             decoration: InputDecoration(
               hintText: 'Search token name',
-              hintStyle: const TextStyle(fontSize: 15, color: AppColors.textMuted),
-              prefixIcon: const Icon(
+              hintStyle: TextStyle(fontSize: 15, color: AppColors.textMuted),
+              prefixIcon: Icon(
                 Icons.search_rounded,
                 color: AppColors.textMuted,
                 size: 22,
               ),
               filled: true,
-              fillColor: const Color(0xFFF5F6F8),
+              fillColor: AppColors.surfaceMuted,
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -578,7 +579,7 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
           const SizedBox(height: 8),
           Expanded(
             child: filtered.isEmpty
-                ? const Center(
+                ? Center(
                     child: Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
                       child: Text(
@@ -590,7 +591,7 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
                 : ListView.separated(
                     itemCount: filtered.length,
                     separatorBuilder: (context, index) =>
-                        const Divider(height: 1, color: Color(0xFFEEF0F4)),
+                        Divider(height: 1, color: AppColors.border),
                     itemBuilder: (context, index) {
                       final token = filtered[index];
                       final selected = widget.selected?.symbol == token.symbol;
@@ -608,7 +609,7 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
                                   children: [
                                     Text(
                                       token.symbol.toUpperCase(),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700,
                                         color: AppColors.textPrimary,
@@ -616,7 +617,7 @@ class _TokenPickerSheetState extends State<_TokenPickerSheet> {
                                     ),
                                     Text(
                                       token.name,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
                                         color: AppColors.textSecondary,
                                       ),
@@ -662,15 +663,15 @@ class _NetworkPickerSheet extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(8, 16, 8, 12 + bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
             child: Align(
               alignment: Alignment.centerLeft,
@@ -726,7 +727,7 @@ class _Header extends StatelessWidget {
             Align(alignment: Alignment.centerLeft, child: AuthBackButton(onPressed: onBack)),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
@@ -750,7 +751,7 @@ class _CryptoFiatTabs extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F1F5),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -824,7 +825,7 @@ class _SelectField extends StatelessWidget {
   Widget build(BuildContext context) {
     final has = value != null && value!.isNotEmpty;
     return Material(
-      color: Colors.white,
+      color: AppColors.surface,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -851,7 +852,7 @@ class _SelectField extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
+              Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
             ],
           ),
         ),
@@ -907,7 +908,7 @@ class _SecondaryButton extends StatelessWidget {
       width: double.infinity,
       height: 56,
       child: Material(
-        color: const Color(0xFFD6DEFF),
+        color: AppColors.tint(const Color(0xFFD6DEFF), strength: 0.3),
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onPressed,
@@ -937,10 +938,10 @@ class _FiatPlaceholder extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F6F8),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Column(
+      child: Column(
         children: [
           Icon(Icons.account_balance_rounded, size: 40, color: AppColors.textMuted),
           SizedBox(height: 12),
@@ -976,17 +977,17 @@ class _ErrorState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F6F8),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
-          const Icon(Icons.error_outline_rounded, size: 36, color: AppColors.textMuted),
+          Icon(Icons.error_outline_rounded, size: 36, color: AppColors.textMuted),
           const SizedBox(height: 12),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
           TextButton(onPressed: onRetry, child: const Text('Retry')),

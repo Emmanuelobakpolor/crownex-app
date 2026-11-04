@@ -11,6 +11,7 @@ import '../services/user_session.dart';
 import '../services/vtu_service.dart';
 import '../services/wallet_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import 'airtime_pin_screen.dart';
 
@@ -356,7 +357,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
               Text(
                 _loadError!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),
               AuthPrimaryButton(label: 'Retry', onPressed: _load),
@@ -408,7 +409,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
           const _SectionLabel('Biller'),
           const SizedBox(height: 12),
           if (_billers.isEmpty)
-            const Text(
+            Text(
               'No cable billers available',
               style: TextStyle(color: AppColors.textMuted),
             )
@@ -452,7 +453,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
           ),
           if (_verifying) ...[
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Verifying…',
               style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
             ),
@@ -486,10 +487,10 @@ class _CableTvScreenState extends State<CableTvScreen> {
           else if (_bouquetError != null)
             Text(
               _bouquetError!,
-              style: const TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.textSecondary),
             )
           else if (_bouquets.isEmpty)
-            const Text(
+            Text(
               'No bouquets available for this biller.',
               style: TextStyle(color: AppColors.textSecondary),
             )
@@ -533,7 +534,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
         : null;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
@@ -593,7 +594,7 @@ class _ScreenHeader extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -603,7 +604,7 @@ class _ScreenHeader extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textMuted,
@@ -627,7 +628,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
@@ -649,9 +650,9 @@ class _InfoBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFEEF3FF),
+        color: AppColors.tint(const Color(0xFFEEF3FF)),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD6E4FF)),
+        border: Border.all(color: AppColors.tint(const Color(0xFFD6E4FF), strength: 0.35)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -661,7 +662,7 @@ class _InfoBanner extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textSecondary,
@@ -752,7 +753,7 @@ class _RecentChip extends StatelessWidget {
                 shortCard,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -763,7 +764,7 @@ class _RecentChip extends StatelessWidget {
                 recent.networkName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textMuted,
@@ -941,7 +942,7 @@ class _LabeledField extends StatelessWidget {
         FilteringTextInputFormatter.digitsOnly,
         LengthLimitingTextInputFormatter(maxLength),
       ],
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
@@ -960,7 +961,7 @@ class _LabeledField extends StatelessWidget {
         ),
         prefixIconConstraints: const BoxConstraints(minWidth: 52, minHeight: 36),
         hintText: hintText,
-        hintStyle: const TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w400),
+        hintStyle: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w400),
         filled: true,
         fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -1030,7 +1031,7 @@ class _BouquetCard extends StatelessWidget {
               ),
               Text(
                 priceLabel,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
@@ -1085,8 +1086,8 @@ class _ConfirmSheet extends StatelessWidget {
     final style = _styleFor(biller.name);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 20, 24, 16 + bottom),
@@ -1095,7 +1096,7 @@ class _ConfirmSheet extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Confirm Subscription',
                   style: TextStyle(
@@ -1107,7 +1108,7 @@ class _ConfirmSheet extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: onClose,
-                child: const Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
+                child: Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -1121,14 +1122,14 @@ class _ConfirmSheet extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             _money(amount),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
               letterSpacing: -0.5,
             ),
           ),
-          Text(bouquetName, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          Text(bouquetName, style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
           const SizedBox(height: 22),
           _DetailRow(label: 'Smartcard number', value: cardno),
           if (customerName != null) ...[
@@ -1159,7 +1160,7 @@ class _DetailRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(label, style: const TextStyle(fontSize: 14.5, color: AppColors.textSecondary)),
+          child: Text(label, style: TextStyle(fontSize: 14.5, color: AppColors.textSecondary)),
         ),
         Flexible(
           child: Text(
@@ -1199,8 +1200,8 @@ class _CableSuccessSheet extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 28, 24, 16 + bottom),
@@ -1224,7 +1225,7 @@ class _CableSuccessSheet extends StatelessWidget {
                           AppColors.primary.withValues(alpha: 0.14),
                           AppColors.primary.withValues(alpha: 0.06),
                         ]
-                      : [const Color(0xFFD1FAE5), const Color(0xFFECFDF5)],
+                      : [AppColors.tint(const Color(0xFFD1FAE5)), AppColors.tint(const Color(0xFFECFDF5))],
                 ),
                 shape: BoxShape.circle,
               ),
@@ -1239,7 +1240,7 @@ class _CableSuccessSheet extends StatelessWidget {
           Text(
             pending ? 'Purchase Submitted' : 'Purchase Successful',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 21,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
@@ -1255,7 +1256,7 @@ class _CableSuccessSheet extends StatelessWidget {
                 : 'You have successfully subscribed to $biller $bouquetName '
                     'for smartcard $cardno.',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14.5, height: 1.45, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14.5, height: 1.45, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 26),
           AuthPrimaryButton(label: 'Done', onPressed: onDone),

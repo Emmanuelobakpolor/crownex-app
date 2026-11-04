@@ -48,7 +48,7 @@ class _AutoConvertTileState extends State<AutoConvertTile> {
           'Auto-convert deposits?',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
-        content: const Text(
+        content: Text(
           'Crypto you receive from an external wallet will be sold for naira '
           'at the live rate (minus the normal sell fee) and added to your NGN '
           'wallet. Very small deposits, and coins without a naira market, '
@@ -58,7 +58,7 @@ class _AutoConvertTileState extends State<AutoConvertTile> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
               style: TextStyle(color: AppColors.textSecondary),
             ),
@@ -112,8 +112,8 @@ class _AutoConvertTileState extends State<AutoConvertTile> {
           Container(
             width: 36,
             height: 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFF1D6),
+            decoration: BoxDecoration(
+              color: AppColors.tint(const Color(0xFFFFF1D6)),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -127,7 +127,7 @@ class _AutoConvertTileState extends State<AutoConvertTile> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Auto-convert deposits to NGN',
                   style: TextStyle(
                     fontSize: 14.5,
@@ -139,7 +139,7 @@ class _AutoConvertTileState extends State<AutoConvertTile> {
                 Text(
                   widget.subtitleBuilder?.call(_enabled) ??
                       'Sell incoming crypto at the live rate',
-                  style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
                 ),
               ],
             ),

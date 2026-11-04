@@ -23,7 +23,7 @@ class AuthBackButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.border, width: 1.2),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.arrow_back_rounded,
             size: 20,
             color: AppColors.textPrimary,
@@ -116,7 +116,7 @@ class AuthFieldLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: AppColors.textPrimary,
@@ -167,14 +167,14 @@ class AuthTextField extends StatelessWidget {
       textCapitalization: textCapitalization,
       onChanged: onChanged,
       validator: validator,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
       ),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w400,
           color: AppColors.textMuted,
@@ -298,7 +298,7 @@ class AuthTitleBlock extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w800,
             color: AppColors.textPrimary,
@@ -309,7 +309,7 @@ class AuthTitleBlock extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           subtitle,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w400,
             color: AppColors.textSecondary,
@@ -348,7 +348,7 @@ class OtpDigitBoxes extends StatelessWidget {
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
             maxLength: 1,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
@@ -361,11 +361,11 @@ class OtpDigitBoxes extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: AppColors.otpBorder),
+                borderSide: BorderSide(color: AppColors.otpBorder),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: AppColors.otpBorder),
+                borderSide: BorderSide(color: AppColors.otpBorder),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -413,7 +413,7 @@ class NumericKeypad extends StatelessWidget {
     ];
 
     return Container(
-      color: const Color(0xFFD1D3D9),
+      color: AppColors.isDark ? AppColors.background : const Color(0xFFD1D3D9),
       padding: EdgeInsets.fromLTRB(4, 6, 4, 6 + bottomInset),
       child: Column(
         children: keys.map((row) {
@@ -428,7 +428,7 @@ class NumericKeypad extends StatelessWidget {
                   return Expanded(
                     child: _KeypadKey(
                       onTap: onBackspace,
-                      child: const Icon(
+                      child: Icon(
                         Icons.backspace_outlined,
                         size: 22,
                         color: AppColors.textPrimary,
@@ -441,7 +441,7 @@ class NumericKeypad extends StatelessWidget {
                     onTap: () => onDigit(key),
                     child: Text(
                       key,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w400,
                         color: AppColors.textPrimary,
@@ -469,7 +469,7 @@ class _KeypadKey extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 3),
       child: Material(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(6),
         child: InkWell(
           onTap: onTap,

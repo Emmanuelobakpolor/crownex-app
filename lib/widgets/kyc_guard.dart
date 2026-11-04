@@ -8,6 +8,7 @@ import '../screens/virtual_card/virtual_card_controller.dart';
 import '../services/kyc_service.dart';
 import '../services/user_session.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 
 /// Wrap a feature screen that requires identity verification (crypto
 /// trading, fiat deposit) with this. Shows the real feature once KYC is
@@ -92,8 +93,8 @@ class _KycGuardState extends State<KycGuard> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        backgroundColor: Colors.white,
+      return Scaffold(
+        backgroundColor: AppColors.surface,
         body: Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
@@ -128,11 +129,11 @@ class _KycLockedScreen extends StatelessWidget {
     final rejected = status?.isRejected ?? false;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -142,7 +143,7 @@ class _KycLockedScreen extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back_rounded,
                       color: AppColors.textPrimary,
                     ),
@@ -174,7 +175,7 @@ class _KycLockedScreen extends StatelessWidget {
                       ? 'Verification needed'
                       : 'Verify your identity',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -188,7 +189,7 @@ class _KycLockedScreen extends StatelessWidget {
                             'this usually takes just a few minutes.'
                       : featureReason,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14.5,
                     height: 1.5,
                     color: AppColors.textSecondary,
@@ -252,13 +253,13 @@ class _ReasonsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Takes about 2 minutes',
             style: TextStyle(
               fontSize: 13,
@@ -303,7 +304,7 @@ class _ReasonRow extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               height: 1.35,
               color: AppColors.textSecondary,

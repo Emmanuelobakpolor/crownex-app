@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../models/app_transaction.dart';
 import '../services/app_transactions_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import 'transaction_details_screen.dart';
 
@@ -104,11 +105,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     final grouped = _grouped;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         body: SafeArea(
           child: Column(
             children: [
@@ -125,7 +126,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                           onPressed: () => Navigator.of(context).pop(),
                         ),
                       ),
-                      const Text(
+                      Text(
                         'Transaction History',
                         style: TextStyle(
                           fontSize: 20,
@@ -184,7 +185,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
           Center(
             child: Text(
               _error!,
-              style: const TextStyle(color: AppColors.textMuted),
+              style: TextStyle(color: AppColors.textMuted),
             ),
           ),
         ],
@@ -215,7 +216,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
               ),
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textSecondary,
@@ -274,7 +275,7 @@ class _TransactionRow extends StatelessWidget {
     final sign = tx.isCredit ? '+' : '-';
 
     return Material(
-      color: const Color(0xFFF0F1F5),
+      color: AppColors.surfaceMuted,
       borderRadius: BorderRadius.circular(18),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -292,10 +293,10 @@ class _TransactionRow extends StatelessWidget {
                 height: 42,
                 decoration: BoxDecoration(
                   color: isCrypto
-                      ? const Color(0xFFFFF1D6)
+                      ? AppColors.tint(const Color(0xFFFFF1D6))
                       : tx.isCredit
-                      ? const Color(0xFFDCFCE7)
-                      : const Color(0xFFFFE4E4),
+                      ? AppColors.tint(const Color(0xFFDCFCE7))
+                      : AppColors.tint(const Color(0xFFFFE4E4)),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -325,7 +326,7 @@ class _TransactionRow extends StatelessWidget {
                       tx.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -336,7 +337,7 @@ class _TransactionRow extends StatelessWidget {
                       tx.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textSecondary,
@@ -421,7 +422,7 @@ class _EmptyState extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        const Text(
+        Text(
           'No transactions yet',
           style: TextStyle(
             fontSize: 17,
@@ -430,7 +431,7 @@ class _EmptyState extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Your deposits and withdrawals will show up here',
           style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),

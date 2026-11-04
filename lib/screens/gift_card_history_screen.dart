@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../models/giftcard.dart';
 import '../services/giftcard_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 
 /// GET /giftcards/history/ — gift card purchase history, grouped by day.
@@ -89,9 +90,9 @@ class _GiftCardHistoryScreenState extends State<GiftCardHistoryScreen> {
     final grouped = _grouped;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: AppTheme.statusBarStyle.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         body: SafeArea(
           child: Column(
             children: [
@@ -106,7 +107,7 @@ class _GiftCardHistoryScreenState extends State<GiftCardHistoryScreen> {
                         alignment: Alignment.centerLeft,
                         child: AuthBackButton(onPressed: () => Navigator.of(context).pop()),
                       ),
-                      const Text(
+                      Text(
                         'Gift Card History',
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                       ),
@@ -140,7 +141,7 @@ class _GiftCardHistoryScreenState extends State<GiftCardHistoryScreen> {
           const SizedBox(height: 80),
           Icon(Icons.wifi_off_rounded, size: 40, color: AppColors.textMuted),
           const SizedBox(height: 12),
-          Center(child: Text(_error!, style: const TextStyle(color: AppColors.textMuted))),
+          Center(child: Text(_error!, style: TextStyle(color: AppColors.textMuted))),
         ],
       );
     }
@@ -166,7 +167,7 @@ class _GiftCardHistoryScreenState extends State<GiftCardHistoryScreen> {
               padding: EdgeInsets.only(top: sectionIndex == 0 ? 0 : 20, bottom: 10),
               child: Text(
                 label,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
               ),
             ),
             for (final p in items)
@@ -190,7 +191,7 @@ class _PurchaseRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFF0F1F5),
+      color: AppColors.surfaceMuted,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
@@ -212,14 +213,14 @@ class _PurchaseRow extends StatelessWidget {
                   children: [
                     Text(
                       purchase.brand,
-                      style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       '\$${purchase.unitPriceUsd.toStringAsFixed(2)} · ${purchase.reference}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -279,12 +280,12 @@ class _EmptyState extends StatelessWidget {
           child: const Icon(Icons.card_giftcard_rounded, size: 32, color: AppColors.primary),
         ),
         const SizedBox(height: 18),
-        const Text(
+        Text(
           'No gift cards yet',
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Your gift card purchases will show up here',
           style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
@@ -315,8 +316,8 @@ class _PurchaseDetailSheet extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 24, 24, 16 + bottom),
@@ -326,12 +327,12 @@ class _PurchaseDetailSheet extends StatelessWidget {
         children: [
           Text(
             purchase.brand,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 4),
           Text(
             '\$${purchase.unitPriceUsd.toStringAsFixed(2)} · ${_formatAmount(purchase.amountNgn)}',
-            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
           if (purchase.status == GiftCardStatus.completed && purchase.redeemCode.isNotEmpty) ...[
@@ -353,7 +354,7 @@ class _PurchaseDetailSheet extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(14)),
-              child: const Text(
+              child: Text(
                 'Still processing — your redeem code will appear here once the provider delivers it.',
                 style: TextStyle(fontSize: 13, height: 1.4, color: AppColors.textSecondary),
               ),
@@ -362,14 +363,14 @@ class _PurchaseDetailSheet extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: const Color(0xFFFFF1F2), borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(color: AppColors.tint(const Color(0xFFFFF1F2)), borderRadius: BorderRadius.circular(14)),
               child: Text(
                 purchase.note.isNotEmpty ? purchase.note : 'This purchase failed and was refunded.',
                 style: const TextStyle(fontSize: 13, height: 1.4, color: Color(0xFFDC2626)),
               ),
             ),
           const SizedBox(height: 20),
-          Text('Reference: ${purchase.reference}', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          Text('Reference: ${purchase.reference}', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
         ],
       ),
     );
@@ -398,12 +399,12 @@ class _Field extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.textMuted),
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.textMuted),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -414,7 +415,7 @@ class _Field extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          GestureDetector(onTap: onCopy, child: const Icon(Icons.copy_rounded, size: 18, color: AppColors.textSecondary)),
+          GestureDetector(onTap: onCopy, child: Icon(Icons.copy_rounded, size: 18, color: AppColors.textSecondary)),
         ],
       ),
     );

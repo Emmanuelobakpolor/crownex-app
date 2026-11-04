@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../services/api_exception.dart';
 import '../../services/kyc_service.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/auth_widgets.dart';
 import 'virtual_card_controller.dart';
 import 'virtual_card_widgets.dart';
@@ -64,11 +65,11 @@ class _CardVerificationHubScreenState extends State<CardVerificationHubScreen> {
       listenable: controller,
       builder: (context, _) {
         return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle.dark.copyWith(
+          value: AppTheme.statusBarStyle.copyWith(
             statusBarColor: Colors.transparent,
           ),
           child: Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.surface,
             body: SafeArea(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,7 +84,7 @@ class _CardVerificationHubScreenState extends State<CardVerificationHubScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Complete Required\nVerification Steps',
                             style: TextStyle(
                               fontSize: 24,
@@ -95,7 +96,7 @@ class _CardVerificationHubScreenState extends State<CardVerificationHubScreen> {
                           const SizedBox(height: 10),
                           Text(
                             widget.config.description,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               height: 1.45,
                               color: AppColors.textSecondary,
@@ -212,7 +213,7 @@ class _StepTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFF3F4F6),
+      color: AppColors.surfaceMuted,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -238,7 +239,7 @@ class _StepTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -257,7 +258,7 @@ class _StepTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
                 color: AppColors.textMuted,
               ),
@@ -340,7 +341,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -354,7 +355,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Personal Information',
                       style: TextStyle(
                         fontSize: 22,
@@ -363,7 +364,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'Please input additional required\ninformation to proceed',
                       style: TextStyle(
                         fontSize: 14,
@@ -413,7 +414,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                       readOnly: true,
                       onTap: _pickDob,
                       suffix: IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.calendar_today_outlined,
                           color: kCardPurple,
                           size: 20,
@@ -561,7 +562,7 @@ class _IdentityVerificationScreenState
   Future<void> _pickIdType() async {
     final result = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -588,13 +589,13 @@ class _IdentityVerificationScreenState
                   return ListTile(
                     title: Text(
                       item.$1,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: kCardPurple,
                       ),
                     ),
                     trailing: item.$2
-                        ? const Text(
+                        ? Text(
                             'Recommended',
                             style: TextStyle(
                               color: AppColors.textMuted,
@@ -619,7 +620,7 @@ class _IdentityVerificationScreenState
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -633,7 +634,7 @@ class _IdentityVerificationScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Identity Verification',
                       style: TextStyle(
                         fontSize: 22,
@@ -642,7 +643,7 @@ class _IdentityVerificationScreenState
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'Please provide required your valid ID\n'
                       'information and Document to proceed',
                       style: TextStyle(
@@ -682,7 +683,7 @@ class _IdentityVerificationScreenState
                                 ),
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.keyboard_arrow_down_rounded,
                               color: AppColors.textMuted,
                             ),
@@ -844,7 +845,7 @@ class _ResidentialAddressScreenState extends State<ResidentialAddressScreen> {
   Future<void> _pickState() async {
     final result = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -870,7 +871,7 @@ class _ResidentialAddressScreenState extends State<ResidentialAddressScreen> {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -884,7 +885,7 @@ class _ResidentialAddressScreenState extends State<ResidentialAddressScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Residential address',
                       style: TextStyle(
                         fontSize: 22,
@@ -893,7 +894,7 @@ class _ResidentialAddressScreenState extends State<ResidentialAddressScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'Confirm your residential address',
                       style: TextStyle(
                         fontSize: 14,
@@ -952,7 +953,7 @@ class _ResidentialAddressScreenState extends State<ResidentialAddressScreen> {
                                 ),
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.keyboard_arrow_down_rounded,
                               color: AppColors.textMuted,
                             ),
@@ -984,7 +985,7 @@ class _ResidentialAddressScreenState extends State<ResidentialAddressScreen> {
                               ),
                             ),
                           ),
-                          const Icon(
+                          Icon(
                             Icons.keyboard_arrow_down_rounded,
                             color: AppColors.textMuted,
                           ),
@@ -1059,7 +1060,7 @@ class _CardReviewPendingScreenState extends State<CardReviewPendingScreen> {
         final rejected = controller.kycRejected;
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.surface,
           body: SafeArea(
             child: Padding(
               padding: EdgeInsets.fromLTRB(24, 24, 24, 12 + bottom),

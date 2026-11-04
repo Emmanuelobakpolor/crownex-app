@@ -7,6 +7,7 @@ import '../services/api_exception.dart';
 import '../services/auth_service.dart';
 import '../services/user_session.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import 'home_screen.dart';
 import 'onboarding_screen.dart';
 
@@ -86,7 +87,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(

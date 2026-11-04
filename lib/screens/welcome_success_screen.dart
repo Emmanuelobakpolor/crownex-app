@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import 'home_screen.dart';
 
@@ -29,7 +30,7 @@ class WelcomeSuccessScreen extends StatelessWidget {
     final firstName = fullName.trim().split(RegExp(r'\s+')).first;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
@@ -43,7 +44,7 @@ class WelcomeSuccessScreen extends StatelessWidget {
                 Text(
                   'Welcome!',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -54,7 +55,7 @@ class WelcomeSuccessScreen extends StatelessWidget {
                 Text(
                   '$firstName, your account has been\ncreated successfully',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w400,
                     color: AppColors.textSecondary,
@@ -88,7 +89,7 @@ class _WelcomeAvatar extends StatelessWidget {
       height: 180,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: const Color(0xFFE8EEFF),
+        color: AppColors.tint(const Color(0xFFE8EEFF)),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.12),

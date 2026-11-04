@@ -6,46 +6,59 @@ import 'app_colors.dart';
 class AppTheme {
   AppTheme._();
 
-  static ThemeData get light {
+  static ThemeData get light => _build(AppColors.light, Brightness.light);
+
+  static ThemeData get dark => _build(AppColors.dark, Brightness.dark);
+
+  /// Status bar icons that stay readable on the current background.
+  static SystemUiOverlayStyle get statusBarStyle =>
+      AppColors.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark;
+
+  static ThemeData _build(AppPalette p, Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
-      scaffoldBackgroundColor: AppColors.background,
+      brightness: brightness,
+      scaffoldBackgroundColor: p.background,
+      canvasColor: p.background,
+      dividerColor: p.border,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         primary: AppColors.primary,
-        surface: AppColors.surface,
-        brightness: Brightness.light,
+        surface: p.surface,
+        onSurface: p.textPrimary,
+        outline: p.border,
+        brightness: brightness,
       ),
       fontFamily: 'Roboto',
-      textTheme: const TextTheme(
+      textTheme: TextTheme(
         headlineLarge: TextStyle(
           fontSize: 32,
           fontWeight: FontWeight.w800,
-          color: AppColors.textPrimary,
+          color: p.textPrimary,
           height: 1.15,
           letterSpacing: -0.5,
         ),
         headlineMedium: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.w800,
-          color: AppColors.textPrimary,
+          color: p.textPrimary,
           height: 1.2,
           letterSpacing: -0.4,
         ),
         bodyLarge: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w400,
-          color: AppColors.textSecondary,
+          color: p.textSecondary,
           height: 1.45,
         ),
         bodyMedium: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w400,
-          color: AppColors.textSecondary,
+          color: p.textSecondary,
           height: 1.4,
         ),
-        labelLarge: TextStyle(
+        labelLarge: const TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w600,
           color: Colors.white,
@@ -56,6 +69,8 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
+          disabledBackgroundColor: p.buttonDisabled,
+          disabledForegroundColor: p.buttonDisabledText,
           elevation: 0,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(
@@ -70,36 +85,42 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFFF9FAFB),
+        fillColor: isDark ? p.fieldFill : const Color(0xFFF9FAFB),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: p.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: p.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-        labelStyle: const TextStyle(color: AppColors.textMuted),
-        hintStyle: const TextStyle(color: AppColors.textMuted),
+        labelStyle: TextStyle(color: p.textMuted),
+        hintStyle: TextStyle(color: p.textMuted),
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.surface,
+      appBarTheme: AppBarTheme(
+        backgroundColor: p.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
-        iconTheme: IconThemeData(color: AppColors.textPrimary),
+        systemOverlayStyle:
+            isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        iconTheme: IconThemeData(color: p.textPrimary),
         titleTextStyle: TextStyle(
-          color: AppColors.textPrimary,
+          color: p.textPrimary,
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
       ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: p.surface,
+        modalBackgroundColor: p.surface,
+      ),
+      dialogTheme: DialogThemeData(backgroundColor: p.surface),
     );
   }
 }

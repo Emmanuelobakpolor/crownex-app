@@ -44,14 +44,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Log out?',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
-        content: const Text(
+        content: Text(
           'You will need to sign in again to access your account.',
           style: TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
               style: TextStyle(color: AppColors.textSecondary),
             ),
@@ -81,6 +81,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _setDarkMode(bool value) {
+    context.read<UserSession>().setDarkMode(value);
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
@@ -90,7 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Settings',
             style: TextStyle(
               fontSize: 22,
@@ -117,11 +121,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 20),
           _SettingsSection(
+            title: 'Preferences',
+            children: [
+              Consumer<UserSession>(
+                builder: (context, session, _) {
+                  final isDark = session.isDarkMode;
+                  return _SettingsTile(
+                    icon: isDark
+                        ? Icons.dark_mode_rounded
+                        : Icons.light_mode_rounded,
+                    iconBg: isDark
+                        ? const Color(0xFF26324A)
+                        : AppColors.tint(const Color(0xFFFFF2CC)),
+                    iconColor: isDark
+                        ? const Color(0xFFC7D2FE)
+                        : const Color(0xFFB7791F),
+                    label: 'Dark mode',
+                    trailing: Switch(
+                      value: isDark,
+                      onChanged: _setDarkMode,
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: AppColors.primary,
+                    ),
+                    onTap: () => _setDarkMode(!isDark),
+                    isLast: true,
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _SettingsSection(
             title: 'Account',
             children: [
               _SettingsTile(
                 icon: Icons.person_outline_rounded,
-                iconBg: const Color(0xFFE0E7FF),
+                iconBg: AppColors.tint(const Color(0xFFE0E7FF)),
                 iconColor: const Color(0xFF4F6BED),
                 label: 'Personal Information',
                 onTap: () {
@@ -134,7 +169,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               _SettingsTile(
                 icon: Icons.lock_outline_rounded,
-                iconBg: const Color(0xFFFFE0E0),
+                iconBg: AppColors.tint(const Color(0xFFFFE0E0)),
                 iconColor: const Color(0xFFE53935),
                 label: 'Security & Transaction PIN',
                 onTap: () {
@@ -147,7 +182,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               _SettingsTile(
                 icon: Icons.account_balance_outlined,
-                iconBg: const Color(0xFFD4FBF6),
+                iconBg: AppColors.tint(const Color(0xFFD4FBF6)),
                 iconColor: const Color(0xFF14B8A6),
                 label: 'Linked Accounts & Cards',
                 onTap: () => _comingSoon('Linked accounts'),
@@ -166,7 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               _SettingsTile(
                 icon: Icons.help_outline_rounded,
-                iconBg: const Color(0xFFD6F0FF),
+                iconBg: AppColors.tint(const Color(0xFFD6F0FF)),
                 iconColor: const Color(0xFF2B9EDB),
                 label: 'Help Center',
                 onTap: () {
@@ -179,7 +214,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               _SettingsTile(
                 icon: Icons.chat_bubble_outline_rounded,
-                iconBg: const Color(0xFFCFF5E1),
+                iconBg: AppColors.tint(const Color(0xFFCFF5E1)),
                 iconColor: const Color(0xFF1FAE63),
                 label: 'Contact Support',
                 onTap: () {
@@ -199,7 +234,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               _SettingsTile(
                 icon: Icons.description_outlined,
-                iconBg: const Color(0xFFE0E7FF),
+                iconBg: AppColors.tint(const Color(0xFFE0E7FF)),
                 iconColor: const Color(0xFF4F6BED),
                 label: 'Terms of Service',
                 onTap: () {
@@ -212,7 +247,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               _SettingsTile(
                 icon: Icons.privacy_tip_outlined,
-                iconBg: const Color(0xFFFFE0E0),
+                iconBg: AppColors.tint(const Color(0xFFFFE0E0)),
                 iconColor: const Color(0xFFE53935),
                 label: 'Privacy Policy',
                 onTap: () {
@@ -229,7 +264,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 24),
           _LogOutButton(onTap: _confirmLogOut),
           const SizedBox(height: 14),
-          const Center(
+          Center(
             child: Text(
               'Crownex v1.0.0',
               style: TextStyle(
@@ -288,14 +323,14 @@ class _ProfileCard extends StatelessWidget {
                   fullName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 3),
-                const Text(
+                Text(
                   'View and edit profile',
                   style: TextStyle(
                     fontSize: 13,
@@ -317,7 +352,7 @@ class _ProfileCard extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.border),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.chevron_right_rounded,
                   size: 20,
                   color: AppColors.textPrimary,
@@ -346,7 +381,7 @@ class _SettingsSection extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: AppColors.textSecondary,
@@ -380,6 +415,7 @@ class _SettingsTile extends StatelessWidget {
     required this.iconColor,
     required this.label,
     required this.onTap,
+    this.trailing,
     this.isLast = false,
   });
 
@@ -388,6 +424,7 @@ class _SettingsTile extends StatelessWidget {
   final Color iconColor;
   final String label;
   final VoidCallback onTap;
+  final Widget? trailing;
   final bool isLast;
 
   @override
@@ -419,14 +456,14 @@ class _SettingsTile extends StatelessWidget {
                   Expanded(
                     child: Text(
                       label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
                     ),
                   ),
-                  const Icon(
+                  if (trailing != null) trailing! else Icon(
                     Icons.chevron_right_rounded,
                     size: 20,
                     color: AppColors.textMuted,
@@ -437,7 +474,7 @@ class _SettingsTile extends StatelessWidget {
           ),
         ),
         if (!isLast)
-          const Divider(height: 1, indent: 62, color: AppColors.border),
+          Divider(height: 1, indent: 62, color: AppColors.border),
       ],
     );
   }
@@ -450,7 +487,7 @@ class _LogOutButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFFFE0E0),
+      color: AppColors.tint(const Color(0xFFFFE0E0)),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,

@@ -7,6 +7,7 @@ import 'package:flutterwave_standard/flutterwave.dart';
 import '../services/api_exception.dart';
 import '../services/wallet_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 
 /// Deposit NGN into the wallet via the Flutterwave standard checkout.
@@ -202,7 +203,7 @@ class _DepositNgnScreenState extends State<DepositNgnScreen> {
         : null;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
@@ -281,7 +282,7 @@ class _DepositHeader extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
-            const Column(
+            Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
@@ -381,7 +382,7 @@ class _AmountCard extends StatelessWidget {
             ],
             onChanged: onChanged,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 40,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
@@ -402,7 +403,7 @@ class _AmountCard extends StatelessWidget {
                 color: AppColors.textMuted.withValues(alpha: 0.45),
                 letterSpacing: -1.2,
               ),
-              prefixIcon: const Padding(
+              prefixIcon: Padding(
                 padding: EdgeInsets.only(right: 4, top: 6),
                 child: Text(
                   '₦',
@@ -522,7 +523,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
@@ -572,7 +573,7 @@ class _PaymentMethodsGrid extends StatelessWidget {
               icon: _methods[i].$1,
               title: _methods[i].$2,
               subtitle: _methods[i].$3,
-              bg: _methods[i].$4,
+              bg: AppColors.tint(_methods[i].$4),
               accent: _methods[i].$5,
             ),
           ),
@@ -620,7 +621,7 @@ class _PaymentMethodTile extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13.5,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
@@ -630,7 +631,7 @@ class _PaymentMethodTile extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w500,
               color: AppColors.textMuted,
@@ -653,11 +654,11 @@ class _SecureInfoBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F7FF),
+        color: AppColors.tint(const Color(0xFFF0F7FF)),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFD6E6FF)),
+        border: Border.all(color: AppColors.tint(const Color(0xFFD6E6FF), strength: 0.35)),
       ),
-      child: const Row(
+      child: Row(
         children: [
           Icon(
             Icons.verified_user_outlined,
@@ -671,7 +672,7 @@ class _SecureInfoBanner extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF3B5B9A),
+                color: AppColors.onTint(const Color(0xFF3B5B9A)),
                 height: 1.35,
               ),
             ),
@@ -743,7 +744,7 @@ class _BottomBar extends StatelessWidget {
             onPressed: onPay,
           ),
           const SizedBox(height: 10),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
@@ -785,7 +786,7 @@ class _LoadingOverlay extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 40),
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 26),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
@@ -811,14 +812,14 @@ class _LoadingOverlay extends StatelessWidget {
                 Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Please don’t close this screen',
                   style: TextStyle(
                     fontSize: 12.5,
@@ -851,7 +852,7 @@ class _DepositSuccessDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
@@ -863,7 +864,7 @@ class _DepositSuccessDialog extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: const Color(0xFFDCFCE7),
+                color: AppColors.tint(const Color(0xFFDCFCE7)),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -880,7 +881,7 @@ class _DepositSuccessDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Deposit successful',
               style: TextStyle(
                 fontSize: 20,
@@ -893,7 +894,7 @@ class _DepositSuccessDialog extends StatelessWidget {
             Text(
               '₦${_format(amount)} has been added to your wallet.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14.5,
                 color: AppColors.textSecondary,
                 height: 1.4,
@@ -909,7 +910,7 @@ class _DepositSuccessDialog extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const Text(
+                  Text(
                     'New balance',
                     style: TextStyle(
                       fontSize: 12,
@@ -920,7 +921,7 @@ class _DepositSuccessDialog extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '₦${_format(newBalance)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,

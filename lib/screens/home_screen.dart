@@ -8,6 +8,7 @@ import '../services/app_transactions_service.dart';
 import '../services/user_session.dart';
 import '../services/wallet_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/kyc_banner.dart';
 import '../widgets/kyc_guard.dart';
 import '../widgets/user_avatar.dart';
@@ -69,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
@@ -290,7 +291,7 @@ class _HomeTabState extends State<_HomeTab> with RouteAware {
                     ? const []
                     : _recent.isEmpty
                     ? [
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.symmetric(vertical: 24),
                           child: Center(
                             child: Text(
@@ -364,7 +365,7 @@ class _GreetingHeader extends StatelessWidget {
                   'Hi, $displayName,',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -374,7 +375,7 @@ class _GreetingHeader extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   greeting,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textSecondary,
@@ -395,7 +396,7 @@ class _GreetingHeader extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.border),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.settings_outlined,
                   size: 21,
                   color: AppColors.textPrimary,
@@ -636,7 +637,7 @@ class _ServicesGrid extends StatelessWidget {
     final items = [
       _ServiceItem(
         label: 'Airtime',
-        bg: const Color(0xFFCFF5E1),
+        bg: AppColors.tint(const Color(0xFFCFF5E1)),
         iconColor: const Color(0xFF1FAE63),
         icon: Icons.call_rounded,
         onTap: () {
@@ -647,7 +648,7 @@ class _ServicesGrid extends StatelessWidget {
       ),
       _ServiceItem(
         label: 'Data',
-        bg: const Color(0xFFFFF0C2),
+        bg: AppColors.tint(const Color(0xFFFFF0C2)),
         iconColor: const Color(0xFFD4A017),
         icon: Icons.cell_tower_rounded,
         onTap: () {
@@ -658,7 +659,7 @@ class _ServicesGrid extends StatelessWidget {
       ),
       _ServiceItem(
         label: 'Electricity',
-        bg: const Color(0xFFFFE0E0),
+        bg: AppColors.tint(const Color(0xFFFFE0E0)),
         iconColor: const Color.fromARGB(255, 206, 104, 102),
         icon: Icons.lightbulb_outline_rounded,
         onTap: () {
@@ -669,7 +670,7 @@ class _ServicesGrid extends StatelessWidget {
       ),
       _ServiceItem(
         label: 'Cable Tv',
-        bg: const Color(0xFFEDE0FF),
+        bg: AppColors.tint(const Color(0xFFEDE0FF)),
         iconColor: const Color(0xFF8B5CF6),
         icon: Icons.crop_square_rounded,
         onTap: () {
@@ -680,7 +681,7 @@ class _ServicesGrid extends StatelessWidget {
       ),
       _ServiceItem(
         label: 'Gift Cards',
-        bg: const Color(0xFFD6F0FF),
+        bg: AppColors.tint(const Color(0xFFD6F0FF)),
         iconColor: const Color(0xFF2B9EDB),
         icon: Icons.card_giftcard_rounded,
         onTap: () {
@@ -691,7 +692,7 @@ class _ServicesGrid extends StatelessWidget {
       ),
       _ServiceItem(
         label: 'Crypto',
-        bg: const Color(0xFFD4FBF6),
+        bg: AppColors.tint(const Color(0xFFD4FBF6)),
         iconColor: const Color(0xFF14B8A6),
         icon: Icons.currency_bitcoin_rounded,
         onTap: () {
@@ -711,7 +712,7 @@ class _ServicesGrid extends StatelessWidget {
       ),
       _ServiceItem(
         label: 'Virtual Card',
-        bg: const Color(0xFFE0E7FF),
+        bg: AppColors.tint(const Color(0xFFE0E7FF)),
         iconColor: const Color(0xFF4F6BED),
         icon: Icons.credit_card_rounded,
         onTap: onOpenVirtualCard,
@@ -795,7 +796,7 @@ class _ServiceCell extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
@@ -820,7 +821,7 @@ class _RecentTransactionsHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Text(
               'Recent Transactions',
               style: TextStyle(
@@ -854,56 +855,56 @@ class _RecentTransactionsHeader extends StatelessWidget {
     case AppTxCategory.deposit:
       return (
         icon: Icons.arrow_downward_rounded,
-        bg: const Color(0xFFDCFCE7),
+        bg: AppColors.tint(const Color(0xFFDCFCE7)),
         fg: const Color(0xFF16A34A),
       );
     case AppTxCategory.withdrawal:
       return (
         icon: Icons.arrow_upward_rounded,
-        bg: const Color(0xFFFFE4E4),
+        bg: AppColors.tint(const Color(0xFFFFE4E4)),
         fg: const Color(0xFFDC2626),
       );
     case AppTxCategory.airtime:
       return (
         icon: Icons.call_rounded,
-        bg: const Color(0xFFCFF5E1),
+        bg: AppColors.tint(const Color(0xFFCFF5E1)),
         fg: const Color(0xFF1FAE63),
       );
     case AppTxCategory.data:
       return (
         icon: Icons.cell_tower_rounded,
-        bg: const Color(0xFFFFF0C2),
+        bg: AppColors.tint(const Color(0xFFFFF0C2)),
         fg: const Color(0xFFD4A017),
       );
     case AppTxCategory.cryptoDeposit:
     case AppTxCategory.cryptoSwap:
       return (
         icon: Icons.currency_exchange_rounded,
-        bg: const Color(0xFFFFF1D6),
+        bg: AppColors.tint(const Color(0xFFFFF1D6)),
         fg: const Color(0xFFE59A0B),
       );
     case AppTxCategory.cryptoBuy:
       return (
         icon: Icons.currency_bitcoin_rounded,
-        bg: const Color(0xFFFFF1D6),
+        bg: AppColors.tint(const Color(0xFFFFF1D6)),
         fg: const Color(0xFFE59A0B),
       );
     case AppTxCategory.cryptoSell:
       return (
         icon: Icons.sell_rounded,
-        bg: const Color(0xFFFFF1D6),
+        bg: AppColors.tint(const Color(0xFFFFF1D6)),
         fg: const Color(0xFFE59A0B),
       );
     case AppTxCategory.cryptoWithdrawal:
       return (
         icon: Icons.send_rounded,
-        bg: const Color(0xFFFFF1D6),
+        bg: AppColors.tint(const Color(0xFFFFF1D6)),
         fg: const Color(0xFFE59A0B),
       );
     case AppTxCategory.giftCard:
       return (
         icon: Icons.card_giftcard_rounded,
-        bg: const Color(0xFFEDE4FF),
+        bg: AppColors.tint(const Color(0xFFEDE4FF)),
         fg: const Color(0xFF7C3AED),
       );
   }
@@ -932,7 +933,7 @@ class _NgnTransactionTile extends StatelessWidget {
     };
 
     return Material(
-      color: const Color(0xFFF0F1F5),
+      color: AppColors.surfaceMuted,
       borderRadius: BorderRadius.circular(20),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -963,7 +964,7 @@ class _NgnTransactionTile extends StatelessWidget {
                       tx.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -974,7 +975,7 @@ class _NgnTransactionTile extends StatelessWidget {
                       tx.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textSecondary,

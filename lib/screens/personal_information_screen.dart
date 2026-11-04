@@ -11,6 +11,7 @@ import '../services/api_exception.dart';
 import '../services/auth_service.dart';
 import '../services/user_session.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import '../widgets/user_avatar.dart';
 import 'change_password_screen.dart';
@@ -185,7 +186,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: AppTheme.statusBarStyle.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
@@ -306,13 +307,13 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.lock_outline_rounded,
                                           size: 20,
                                           color: AppColors.textPrimary,
                                         ),
                                         const SizedBox(width: 12),
-                                        const Expanded(
+                                        Expanded(
                                           child: Text(
                                             'Change Password',
                                             style: TextStyle(
@@ -322,7 +323,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                                             ),
                                           ),
                                         ),
-                                        const Icon(
+                                        Icon(
                                           Icons.chevron_right_rounded,
                                           size: 20,
                                           color: AppColors.textMuted,

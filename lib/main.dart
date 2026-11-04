@@ -13,36 +13,48 @@ import 'theme/app_theme.dart';
 final RouteObserver<PageRoute<void>> routeObserver =
     RouteObserver<PageRoute<void>>();
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final darkMode = await UserSession.loadDarkModePreference();
   SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
+    SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      statusBarBrightness: Brightness.light,
+      statusBarIconBrightness: darkMode ? Brightness.light : Brightness.dark,
+      statusBarBrightness: darkMode ? Brightness.dark : Brightness.light,
     ),
   );
-  runApp(const CrownexApp());
+  runApp(CrownexApp(darkMode: darkMode));
 }
 
 class CrownexApp extends StatelessWidget {
-  const CrownexApp({super.key});
+  const CrownexApp({super.key, this.darkMode = false});
+
+  final bool darkMode;
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) {
-        final session = UserSession();
+        final session = UserSession(darkMode: darkMode);
         SessionGuard.instance.attach(session);
         return session;
       },
-      child: MaterialApp(
-        title: 'Crownex',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        navigatorKey: SessionGuard.instance.navigatorKey,
-        navigatorObservers: [routeObserver],
-        home: const SplashScreen(),
+      child: Consumer<UserSession>(
+        builder: (context, session, child) {
+          return MaterialApp(
+            title: 'Crownex',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: session.themeMode,
+            // Screens read AppColors directly and switch instantly, so
+            // animating the Theme would leave the two out of step.
+            themeAnimationDuration: Duration.zero,
+            navigatorKey: SessionGuard.instance.navigatorKey,
+            navigatorObservers: [routeObserver],
+            home: const SplashScreen(),
+          );
+        },
       ),
     );
   }

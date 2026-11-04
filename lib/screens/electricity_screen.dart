@@ -11,6 +11,7 @@ import '../services/user_session.dart';
 import '../services/vtu_service.dart';
 import '../services/wallet_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import 'airtime_pin_screen.dart';
 
@@ -372,7 +373,7 @@ class _ElectricityScreenState extends State<ElectricityScreen> {
               Text(
                 _loadError!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),
               AuthPrimaryButton(label: 'Retry', onPressed: _load),
@@ -443,7 +444,7 @@ class _ElectricityScreenState extends State<ElectricityScreen> {
               ),
             )
           else if (_variationError != null)
-            Text(_variationError!, style: const TextStyle(color: AppColors.textSecondary))
+            Text(_variationError!, style: TextStyle(color: AppColors.textSecondary))
           else
             Wrap(
               spacing: 8,
@@ -502,7 +503,7 @@ class _ElectricityScreenState extends State<ElectricityScreen> {
           ),
           if (_verifying) ...[
             const SizedBox(height: 8),
-            const Text('Verifying…', style: TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
+            Text('Verifying…', style: TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
           ] else if (_customerName != null) ...[
             const SizedBox(height: 8),
             Text(
@@ -546,8 +547,8 @@ class _ElectricityScreenState extends State<ElectricityScreen> {
         final bottom = MediaQuery.paddingOf(ctx).bottom;
         return Container(
           constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * 0.6),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           padding: EdgeInsets.fromLTRB(8, 12, 8, 12 + bottom),
@@ -558,7 +559,7 @@ class _ElectricityScreenState extends State<ElectricityScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 child: Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Select Biller',
                         style: TextStyle(
@@ -570,7 +571,7 @@ class _ElectricityScreenState extends State<ElectricityScreen> {
                     ),
                     GestureDetector(
                       onTap: () => Navigator.of(ctx).pop(),
-                      child: const Icon(Icons.close_rounded, size: 22, color: AppColors.textPrimary),
+                      child: Icon(Icons.close_rounded, size: 22, color: AppColors.textPrimary),
                     ),
                   ],
                 ),
@@ -580,7 +581,7 @@ class _ElectricityScreenState extends State<ElectricityScreen> {
                   shrinkWrap: true,
                   itemCount: _billers.length,
                   separatorBuilder: (context, index) =>
-                      const Divider(height: 1, color: Color(0xFFEEF0F4)),
+                      Divider(height: 1, color: AppColors.border),
                   itemBuilder: (context, i) {
                     final biller = _billers[i];
                     final selected = biller.subcategoryId == _selectedBiller?.subcategoryId;
@@ -614,7 +615,7 @@ class _ElectricityScreenState extends State<ElectricityScreen> {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: AppTheme.statusBarStyle.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
@@ -670,7 +671,7 @@ class _ScreenHeader extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -680,7 +681,7 @@ class _ScreenHeader extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textMuted,
@@ -704,7 +705,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
@@ -726,9 +727,9 @@ class _InfoBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFEEF3FF),
+        color: AppColors.tint(const Color(0xFFEEF3FF)),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD6E4FF)),
+        border: Border.all(color: AppColors.tint(const Color(0xFFD6E4FF), strength: 0.35)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -738,7 +739,7 @@ class _InfoBanner extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textSecondary,
@@ -819,7 +820,7 @@ class _RecentChip extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 recent.billerName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -828,7 +829,7 @@ class _RecentChip extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 shortMeter,
-                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                style: TextStyle(fontSize: 12, color: AppColors.textMuted),
               ),
             ],
           ),
@@ -875,7 +876,7 @@ class _SelectField extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(Icons.keyboard_arrow_down_rounded, size: 24, color: AppColors.textSecondary),
+              Icon(Icons.keyboard_arrow_down_rounded, size: 24, color: AppColors.textSecondary),
             ],
           ),
         ),
@@ -913,7 +914,7 @@ class _LabeledField extends StatelessWidget {
         if (keyboardType == TextInputType.number) FilteringTextInputFormatter.digitsOnly,
         LengthLimitingTextInputFormatter(maxLength),
       ],
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
@@ -932,7 +933,7 @@ class _LabeledField extends StatelessWidget {
         ),
         prefixIconConstraints: const BoxConstraints(minWidth: 52, minHeight: 36),
         hintText: hintText,
-        hintStyle: const TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w400),
+        hintStyle: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w400),
         filled: true,
         fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -985,7 +986,7 @@ class _AmountCard extends StatelessWidget {
             inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
             onChanged: onChanged,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
@@ -1003,7 +1004,7 @@ class _AmountCard extends StatelessWidget {
                 fontWeight: FontWeight.w800,
                 color: AppColors.textMuted.withValues(alpha: 0.4),
               ),
-              prefixIcon: const Padding(
+              prefixIcon: Padding(
                 padding: EdgeInsets.only(right: 2, top: 4),
                 child: Text(
                   '₦',
@@ -1076,8 +1077,8 @@ class _ConfirmSheet extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 20, 24, 16 + bottom),
@@ -1086,7 +1087,7 @@ class _ConfirmSheet extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Confirm Payment',
                   style: TextStyle(
@@ -1098,7 +1099,7 @@ class _ConfirmSheet extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: onClose,
-                child: const Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
+                child: Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -1115,7 +1116,7 @@ class _ConfirmSheet extends StatelessWidget {
           ),
           Text(
             _money(amount),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
@@ -1154,7 +1155,7 @@ class _DetailRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(label, style: const TextStyle(fontSize: 14.5, color: AppColors.textSecondary)),
+          child: Text(label, style: TextStyle(fontSize: 14.5, color: AppColors.textSecondary)),
         ),
         Flexible(
           child: Text(
@@ -1219,8 +1220,8 @@ class _ElectricitySuccessSheet extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 28, 24, 16 + bottom),
@@ -1244,7 +1245,7 @@ class _ElectricitySuccessSheet extends StatelessWidget {
                           AppColors.primary.withValues(alpha: 0.14),
                           AppColors.primary.withValues(alpha: 0.06),
                         ]
-                      : [const Color(0xFFD1FAE5), const Color(0xFFECFDF5)],
+                      : [AppColors.tint(const Color(0xFFD1FAE5)), AppColors.tint(const Color(0xFFECFDF5))],
                 ),
                 shape: BoxShape.circle,
               ),
@@ -1259,7 +1260,7 @@ class _ElectricitySuccessSheet extends StatelessWidget {
           Text(
             pending ? 'Payment Submitted' : 'Payment Successful',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 21,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
@@ -1275,7 +1276,7 @@ class _ElectricitySuccessSheet extends StatelessWidget {
                 : 'You have successfully paid ${_money(amount)} to $biller for '
                     'meter $meter.',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14.5, height: 1.45, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14.5, height: 1.45, color: AppColors.textSecondary),
           ),
           if (!pending && providerMessage.isNotEmpty) ...[
             const SizedBox(height: 18),
@@ -1292,7 +1293,7 @@ class _ElectricitySuccessSheet extends StatelessWidget {
                   Expanded(
                     child: Text(
                       providerMessage,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         height: 1.4,
                         color: AppColors.textPrimary,
@@ -1302,7 +1303,7 @@ class _ElectricitySuccessSheet extends StatelessWidget {
                   const SizedBox(width: 10),
                   GestureDetector(
                     onTap: () => _copyMessage(context),
-                    child: const Icon(Icons.copy_rounded, size: 18, color: AppColors.textSecondary),
+                    child: Icon(Icons.copy_rounded, size: 18, color: AppColors.textSecondary),
                   ),
                 ],
               ),

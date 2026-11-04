@@ -232,7 +232,7 @@ class _HubHeader extends StatelessWidget {
       children: [
         AuthBackButton(onPressed: onBack),
         const SizedBox(width: 12),
-        const Text(
+        Text(
           'Crypto',
           style: TextStyle(
             fontSize: 22,
@@ -477,7 +477,7 @@ class _QuickActionButton extends StatelessWidget {
         const SizedBox(height: 7),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
@@ -499,7 +499,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w800,
         color: AppColors.textPrimary,
@@ -560,7 +560,7 @@ class _HoldingTile extends StatelessWidget {
                   children: [
                     Text(
                       wallet.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -568,14 +568,14 @@ class _HoldingTile extends StatelessWidget {
                     ),
                     Text(
                       '${_fmt(wallet.total, decimals: decimals)} ${wallet.coin.toUpperCase()}',
-                      style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
               ),
               Text(
                 valueNgn != null ? _fmtNgn(valueNgn) : '—',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -621,7 +621,7 @@ class _MarketTile extends StatelessWidget {
                   children: [
                     Text(
                       coin.symbol.toUpperCase(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -629,7 +629,7 @@ class _MarketTile extends StatelessWidget {
                     ),
                     Text(
                       coin.name,
-                      style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -703,12 +703,12 @@ class _ErrorState extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(Icons.error_outline_rounded, size: 36, color: AppColors.textMuted),
+          Icon(Icons.error_outline_rounded, size: 36, color: AppColors.textMuted),
           const SizedBox(height: 12),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
           TextButton(onPressed: onRetry, child: const Text('Retry')),

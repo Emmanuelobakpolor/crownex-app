@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../services/api_exception.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import 'set_transaction_pin_screen.dart';
 
@@ -98,7 +99,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
@@ -169,7 +170,7 @@ class _SetupProfileScreenState extends State<SetupProfileScreen> {
                           },
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'Must be at least 8 characters.',
                           style: TextStyle(
                             fontSize: 13,

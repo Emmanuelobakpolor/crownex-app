@@ -5,6 +5,7 @@ import '../models/wallet.dart';
 import '../services/api_exception.dart';
 import '../services/wallet_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 
 /// Hardcoded major Nigerian bank codes — used only if GET /wallet/banks/
@@ -284,7 +285,7 @@ class _WithdrawNgnScreenState extends State<WithdrawNgnScreen> {
         : null;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
@@ -399,7 +400,7 @@ class _WithdrawHeader extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
-            const Column(
+            Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
@@ -653,7 +654,7 @@ class _AmountCard extends StatelessWidget {
             ],
             onChanged: onChanged,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 40,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
@@ -674,7 +675,7 @@ class _AmountCard extends StatelessWidget {
                 color: AppColors.textMuted.withValues(alpha: 0.45),
                 letterSpacing: -1.2,
               ),
-              prefixIcon: const Padding(
+              prefixIcon: Padding(
                 padding: EdgeInsets.only(right: 4, top: 6),
                 child: Text(
                   '₦',
@@ -794,7 +795,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
@@ -849,7 +850,7 @@ class _BankDetailsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Bank',
             style: TextStyle(
               fontSize: 13,
@@ -860,7 +861,7 @@ class _BankDetailsCard extends StatelessWidget {
           const SizedBox(height: 8),
           _BankSelector(bank: selectedBank, onTap: onPickBank),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Account number',
             style: TextStyle(
               fontSize: 13,
@@ -910,9 +911,9 @@ class _VerifiedNameBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFECFDF5),
+        color: AppColors.tint(const Color(0xFFECFDF5)),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFA7F3D0)),
+        border: Border.all(color: AppColors.tint(const Color(0xFFA7F3D0), strength: 0.35)),
       ),
       child: Row(
         children: [
@@ -920,7 +921,7 @@ class _VerifiedNameBanner extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: const Color(0xFFD1FAE5),
+              color: AppColors.tint(const Color(0xFFD1FAE5)),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
@@ -945,7 +946,7 @@ class _VerifiedNameBanner extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -972,9 +973,9 @@ class _ErrorBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
+        color: AppColors.tint(const Color(0xFFFEF2F2)),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFECACA)),
+        border: Border.all(color: AppColors.tint(const Color(0xFFFECACA), strength: 0.35)),
       ),
       child: Row(
         children: [
@@ -1012,11 +1013,11 @@ class _InfoBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFEEF3FF),
+        color: AppColors.tint(const Color(0xFFEEF3FF)),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD6E4FF)),
+        border: Border.all(color: AppColors.tint(const Color(0xFFD6E4FF), strength: 0.35)),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
@@ -1148,7 +1149,7 @@ class _BankSelector extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.keyboard_arrow_down_rounded,
                 color: AppColors.textMuted,
               ),
@@ -1294,8 +1295,8 @@ class _BankPickerSheetState extends State<_BankPickerSheet> {
     return FractionallySizedBox(
       heightFactor: 0.82,
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         padding: EdgeInsets.fromLTRB(20, 12, 20, bottom),
@@ -1306,11 +1307,11 @@ class _BankPickerSheetState extends State<_BankPickerSheet> {
               height: 4,
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFFE5E7EB),
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Text(
+            Text(
               'Select Bank',
               style: TextStyle(
                 fontSize: 18,
@@ -1322,7 +1323,7 @@ class _BankPickerSheetState extends State<_BankPickerSheet> {
             const SizedBox(height: 4),
             Text(
               '${widget.banks.length} banks available',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textMuted,
@@ -1335,11 +1336,11 @@ class _BankPickerSheetState extends State<_BankPickerSheet> {
               style: const TextStyle(fontSize: 15),
               decoration: InputDecoration(
                 hintText: 'Search banks',
-                hintStyle: const TextStyle(
+                hintStyle: TextStyle(
                   color: AppColors.textMuted,
                   fontWeight: FontWeight.w400,
                 ),
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.search_rounded,
                   color: AppColors.textMuted,
                 ),
@@ -1384,7 +1385,7 @@ class _BankPickerSheetState extends State<_BankPickerSheet> {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              const Text(
+                              Text(
                                 'No banks found',
                                 style: TextStyle(
                                   fontSize: 15,
@@ -1397,10 +1398,7 @@ class _BankPickerSheetState extends State<_BankPickerSheet> {
                         )
                       : ListView.separated(
                           itemCount: filtered.length,
-                          separatorBuilder: (_, _) => const Divider(
-                            height: 1,
-                            color: Color(0xFFEEF0F4),
-                          ),
+                          separatorBuilder: (_, _) => Divider(height: 1, color: AppColors.border),
                           itemBuilder: (_, i) {
                             final bank = filtered[i];
                             return Material(
@@ -1419,14 +1417,14 @@ class _BankPickerSheetState extends State<_BankPickerSheet> {
                                       Expanded(
                                         child: Text(
                                           bank.name,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w600,
                                             color: AppColors.textPrimary,
                                           ),
                                         ),
                                       ),
-                                      const Icon(
+                                      Icon(
                                         Icons.chevron_right_rounded,
                                         color: AppColors.textMuted,
                                         size: 22,
@@ -1466,7 +1464,7 @@ class _WithdrawSuccessDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 28),
       child: Padding(
@@ -1495,7 +1493,7 @@ class _WithdrawSuccessDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 18),
-            const Text(
+            Text(
               'Withdrawal Initiated',
               style: TextStyle(
                 fontSize: 19,
@@ -1509,7 +1507,7 @@ class _WithdrawSuccessDialog extends StatelessWidget {
               '₦${_formatAmount(amount)} is on its way. It typically arrives '
               'within 24 hours.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14.5,
                 color: AppColors.textSecondary,
                 height: 1.4,
@@ -1576,7 +1574,7 @@ class _SuccessDetailRow extends StatelessWidget {
           width: 72,
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w500,
               color: AppColors.textMuted,
@@ -1626,7 +1624,7 @@ class _Field extends StatelessWidget {
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
       onChanged: onChanged,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
@@ -1634,7 +1632,7 @@ class _Field extends StatelessWidget {
       ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           color: AppColors.textMuted,
           fontWeight: FontWeight.w400,
           letterSpacing: 0,

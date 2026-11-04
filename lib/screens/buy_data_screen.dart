@@ -7,6 +7,7 @@ import '../services/api_exception.dart';
 import '../services/user_session.dart';
 import '../services/vtu_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import 'airtime_pin_screen.dart';
 
@@ -343,7 +344,7 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
+                  color: AppColors.tint(const Color(0xFFFEF2F2)),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(
@@ -356,7 +357,7 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
               Text(
                 _loadError!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   height: 1.4,
                   color: AppColors.textSecondary,
@@ -440,7 +441,7 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
               if (_plans.isNotEmpty)
                 Text(
                   '${_plans.length} options',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textMuted,
@@ -460,7 +461,7 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
                   color: AppColors.border.withValues(alpha: 0.9),
                 ),
               ),
-              child: const Column(
+              child: Column(
                 children: [
                   Icon(
                     Icons.inbox_outlined,
@@ -511,7 +512,7 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
     final plan = _selectedPlan;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
@@ -571,7 +572,7 @@ class _ScreenHeader extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -581,7 +582,7 @@ class _ScreenHeader extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textMuted,
@@ -605,7 +606,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
@@ -626,9 +627,9 @@ class _InfoBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFEEF3FF),
+        color: AppColors.tint(const Color(0xFFEEF3FF)),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD6E4FF)),
+        border: Border.all(color: AppColors.tint(const Color(0xFFD6E4FF), strength: 0.35)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -642,7 +643,7 @@ class _InfoBanner extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textSecondary,
@@ -742,7 +743,7 @@ class _RecentChip extends StatelessWidget {
                 shortPhone,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -753,7 +754,7 @@ class _RecentChip extends StatelessWidget {
                 recent.networkName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textMuted,
@@ -837,7 +838,7 @@ class _PhoneField extends StatelessWidget {
         FilteringTextInputFormatter.digitsOnly,
         LengthLimitingTextInputFormatter(11),
       ],
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
@@ -863,7 +864,7 @@ class _PhoneField extends StatelessWidget {
           minHeight: 36,
         ),
         hintText: '0800 000 0000',
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           color: AppColors.textMuted,
           fontWeight: FontWeight.w400,
           letterSpacing: 0,
@@ -907,7 +908,7 @@ class _CarrierRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (carriers.isEmpty) {
-      return const Text(
+      return Text(
         'No networks available',
         style: TextStyle(color: AppColors.textMuted),
       );
@@ -1251,8 +1252,8 @@ class _DataSuccessSheet extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 28, 24, 16 + bottom),
@@ -1279,8 +1280,8 @@ class _DataSuccessSheet extends StatelessWidget {
                           AppColors.primary.withValues(alpha: 0.06),
                         ]
                       : [
-                          const Color(0xFFD1FAE5),
-                          const Color(0xFFECFDF5),
+                          AppColors.tint(const Color(0xFFD1FAE5)),
+                          AppColors.tint(const Color(0xFFECFDF5)),
                         ],
                 ),
                 shape: BoxShape.circle,
@@ -1296,7 +1297,7 @@ class _DataSuccessSheet extends StatelessWidget {
           Text(
             pending ? 'Purchase Submitted' : 'Purchase Successful',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 21,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
@@ -1312,7 +1313,7 @@ class _DataSuccessSheet extends StatelessWidget {
                 : 'You successfully purchased $planLabel ($networkName) for '
                     '$phone · ${_money(amount)}.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14.5,
               height: 1.45,
               color: AppColors.textSecondary,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 
 /// Full-screen hourglass processing state after PIN confirmation.
 class AirtimeProcessingScreen extends StatefulWidget {
@@ -49,11 +50,11 @@ class _AirtimeProcessingScreenState extends State<AirtimeProcessingScreen>
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         body: Center(
           child: AnimatedBuilder(
             animation: _controller,

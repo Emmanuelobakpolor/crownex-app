@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../services/user_session.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 
 /// Contact Support form — collects issue details for Crownex support.
@@ -90,7 +91,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: AppTheme.statusBarStyle.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
@@ -160,7 +161,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                               const AuthFieldLabel('Message'),
                               _MessageField(controller: _messageController),
                               const SizedBox(height: 10),
-                              const Text(
+                              Text(
                                 'Include transaction IDs, wallet addresses, or meter numbers when relevant. Never share your password, OTP, or PIN.',
                                 style: TextStyle(
                                   fontSize: 12.5,
@@ -266,7 +267,7 @@ void _showPhoneOptions(BuildContext context) {
     backgroundColor: Colors.transparent,
     builder: (ctx) {
       return Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -288,7 +289,7 @@ void _showPhoneOptions(BuildContext context) {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Contact by phone',
               style: TextStyle(
                 fontSize: 17,
@@ -299,7 +300,7 @@ void _showPhoneOptions(BuildContext context) {
             const SizedBox(height: 4),
             Text(
               _SupportContacts.phoneDisplay,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary,
@@ -358,7 +359,7 @@ void _showEmailOptions(BuildContext context, String email, {required String labe
     backgroundColor: Colors.transparent,
     builder: (ctx) {
       return Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -382,7 +383,7 @@ void _showEmailOptions(BuildContext context, String email, {required String labe
             const SizedBox(height: 16),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
@@ -392,7 +393,7 @@ void _showEmailOptions(BuildContext context, String email, {required String labe
             Text(
               email,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary,
@@ -474,7 +475,7 @@ class _SheetAction extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15.5,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -485,7 +486,7 @@ class _SheetAction extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
                         color: AppColors.textSecondary,
                       ),
@@ -493,7 +494,7 @@ class _SheetAction extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
                 color: AppColors.textMuted,
               ),
@@ -590,7 +591,7 @@ class _QuickContactSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Reach us directly',
           style: TextStyle(
             fontSize: 14,
@@ -685,7 +686,7 @@ class _ContactTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,
@@ -696,7 +697,7 @@ class _ContactTile extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -715,7 +716,7 @@ class _ContactTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
                 color: AppColors.textMuted,
               ),
@@ -748,14 +749,14 @@ class _HoursTile extends StatelessWidget {
               color: AppColors.fieldFill,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.schedule_rounded,
               size: 20,
               color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -815,7 +816,7 @@ class _TopicPicker extends StatelessWidget {
       isExpanded: true,
       decoration: InputDecoration(
         hintText: 'Select a topic',
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w400,
           color: AppColors.textMuted,
@@ -836,7 +837,7 @@ class _TopicPicker extends StatelessWidget {
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
       ),
-      icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted),
+      icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted),
       items: topics
           .map(
             (t) => DropdownMenuItem<String>(
@@ -844,7 +845,7 @@ class _TopicPicker extends StatelessWidget {
               child: Text(
                 t,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
@@ -872,7 +873,7 @@ class _MessageField extends StatelessWidget {
       maxLength: 1000,
       textCapitalization: TextCapitalization.sentences,
       textInputAction: TextInputAction.newline,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
@@ -886,12 +887,12 @@ class _MessageField extends StatelessWidget {
       },
       decoration: InputDecoration(
         hintText: 'Describe your issue, including any error messages…',
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w400,
           color: AppColors.textMuted,
         ),
-        counterStyle: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+        counterStyle: TextStyle(color: AppColors.textMuted, fontSize: 12),
         filled: true,
         fillColor: AppColors.fieldFill,
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -935,8 +936,8 @@ class _SuccessView extends StatelessWidget {
           Container(
             width: 88,
             height: 88,
-            decoration: const BoxDecoration(
-              color: Color(0xFFCFF5E1),
+            decoration: BoxDecoration(
+              color: AppColors.tint(const Color(0xFFCFF5E1)),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -946,7 +947,7 @@ class _SuccessView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
-          const Text(
+          Text(
             'Message sent',
             style: TextStyle(
               fontSize: 22,
@@ -955,7 +956,7 @@ class _SuccessView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             'Thanks for reaching out. Our team will review your request and reply to your email, usually within 24 hours.',
             textAlign: TextAlign.center,
             style: TextStyle(

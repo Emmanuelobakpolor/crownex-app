@@ -4,9 +4,12 @@ import 'package:flutter/services.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/auth_widgets.dart';
 
-const kCardPurple = Color(0xFF3D1A6E);
-const kFieldFill = Color(0xFFF3F1F6);
-const kFieldBorder = Color(0xFFD4C8E0);
+Color get kCardPurple =>
+    AppColors.isDark ? const Color(0xFFC4B5FD) : const Color(0xFF3D1A6E);
+Color get kFieldFill =>
+    AppColors.isDark ? AppColors.fieldFill : const Color(0xFFF3F1F6);
+Color get kFieldBorder =>
+    AppColors.isDark ? AppColors.border : const Color(0xFFD4C8E0);
 
 class CardFlowHeader extends StatelessWidget {
   const CardFlowHeader({
@@ -36,7 +39,7 @@ class CardFlowHeader extends StatelessWidget {
               ),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
@@ -211,7 +214,7 @@ class VerifyFieldLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: AppColors.textPrimary,
@@ -252,14 +255,14 @@ class VerifyTextField extends StatelessWidget {
       readOnly: readOnly,
       onTap: onTap,
       inputFormatters: inputFormatters,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
       ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           color: AppColors.textMuted,
           fontWeight: FontWeight.w400,
         ),
@@ -272,15 +275,15 @@ class VerifyTextField extends StatelessWidget {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: kFieldBorder),
+          borderSide: BorderSide(color: kFieldBorder),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: kFieldBorder),
+          borderSide: BorderSide(color: kFieldBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: kCardPurple, width: 1.4),
+          borderSide: BorderSide(color: kCardPurple, width: 1.4),
         ),
       ),
     );
@@ -366,14 +369,14 @@ class UploadBox extends StatelessWidget {
                   Expanded(
                     child: Text(
                       fileName!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: kCardPurple,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
                     ),
                   ),
-                  const Icon(Icons.upload_rounded, color: kCardPurple, size: 22),
+                  Icon(Icons.upload_rounded, color: kCardPurple, size: 22),
                 ],
               )
             : compact
@@ -382,13 +385,13 @@ class UploadBox extends StatelessWidget {
                       Expanded(
                         child: Text(
                           label,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textMuted,
                             fontSize: 14,
                           ),
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.upload_rounded,
                         color: kCardPurple,
                         size: 22,
@@ -402,7 +405,7 @@ class UploadBox extends StatelessWidget {
                       Text(
                         label,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textMuted,
                           fontSize: 13,
                         ),

@@ -9,6 +9,7 @@ import '../services/api_exception.dart';
 import '../services/giftcard_service.dart';
 import '../services/wallet_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import 'airtime_pin_screen.dart';
 import 'gift_card_history_screen.dart';
@@ -329,7 +330,7 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_loadError!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
+              Text(_loadError!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
               const SizedBox(height: 20),
               AuthPrimaryButton(label: 'Retry', onPressed: _load),
             ],
@@ -356,7 +357,7 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
           const SizedBox(height: 12),
 
           if (_brands.isEmpty)
-            const Text('No brands available for this country.', style: TextStyle(color: AppColors.textMuted))
+            Text('No brands available for this country.', style: TextStyle(color: AppColors.textMuted))
           else
             _SelectedBrandCard(
               brand: _selectedBrand,
@@ -379,9 +380,9 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
           if (_productsLoading)
             const Center(child: CircularProgressIndicator(color: AppColors.primary))
           else if (_productError != null)
-            Text(_productError!, style: const TextStyle(color: AppColors.textSecondary))
+            Text(_productError!, style: TextStyle(color: AppColors.textSecondary))
           else if (fixed.isEmpty && open == null)
-            const Text('No denominations available.', style: TextStyle(color: AppColors.textMuted))
+            Text('No denominations available.', style: TextStyle(color: AppColors.textMuted))
           else ...[
             if (fixed.isNotEmpty)
               GridView.builder(
@@ -430,7 +431,7 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Wallet Balance', style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+                Text('Wallet Balance', style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
                 Text(_money(_ngnBalance), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
               ],
             ),
@@ -451,7 +452,7 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: AppTheme.statusBarStyle.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
@@ -543,7 +544,7 @@ class _CountryRow extends StatelessWidget {
               Expanded(
                 child: Text(country.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               ),
-              const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
+              Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
             ],
           ),
         ),
@@ -671,8 +672,8 @@ class _BrandPickerSheetState extends State<_BrandPickerSheet> {
 
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.82),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(20, 14, 20, 12 + bottom),
@@ -698,8 +699,8 @@ class _BrandPickerSheetState extends State<_BrandPickerSheet> {
             onChanged: (v) => setState(() => _query = v),
             decoration: InputDecoration(
               hintText: 'Search brand',
-              hintStyle: const TextStyle(color: AppColors.textMuted),
-              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textMuted, size: 22),
+              hintStyle: TextStyle(color: AppColors.textMuted),
+              prefixIcon: Icon(Icons.search_rounded, color: AppColors.textMuted, size: 22),
               filled: true,
               fillColor: AppColors.background,
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -712,7 +713,7 @@ class _BrandPickerSheetState extends State<_BrandPickerSheet> {
           const SizedBox(height: 16),
           Flexible(
             child: filtered.isEmpty
-                ? const Padding(
+                ? Padding(
                     padding: EdgeInsets.symmetric(vertical: 40),
                     child: Center(
                       child: Text('No brands match your search.', style: TextStyle(color: AppColors.textMuted)),
@@ -906,7 +907,7 @@ class _DenominationCard extends StatelessWidget {
             children: [
               Text(usdLabel, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: selected ? AppColors.primary : null)),
               const SizedBox(height: 6),
-              Text(ngnLabel, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+              Text(ngnLabel, style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
             ],
           ),
         ),
@@ -1001,9 +1002,9 @@ class _InfoBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F4FF),
+        color: AppColors.tint(const Color(0xFFF0F4FF)),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDAE6FF)),
+        border: Border.all(color: AppColors.tint(const Color(0xFFDAE6FF), strength: 0.35)),
       ),
       child: Row(
         children: [
@@ -1027,8 +1028,8 @@ class _CountrySheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 24, 24, 16 + bottom),
@@ -1079,8 +1080,8 @@ class _ConfirmSheet extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 24, 24, 16 + bottom),
@@ -1094,7 +1095,7 @@ class _ConfirmSheet extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(false),
-                child: const Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
+                child: Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -1108,7 +1109,7 @@ class _ConfirmSheet extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '${_usdLabel(usdAmount)} ${brand.brandName} gift card',
-            style: const TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 24),
           _SummaryRow(label: 'Brand', value: brand.brandName),
@@ -1137,7 +1138,7 @@ class _SummaryRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(label, style: const TextStyle(fontSize: 14.5, color: AppColors.textSecondary)),
+          child: Text(label, style: TextStyle(fontSize: 14.5, color: AppColors.textSecondary)),
         ),
         Text(
           value,
@@ -1173,8 +1174,8 @@ class _GiftCardSuccessSheet extends StatelessWidget {
     final pending = purchase.status == GiftCardStatus.pending;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 28, 24, 16 + bottom),
@@ -1198,7 +1199,7 @@ class _GiftCardSuccessSheet extends StatelessWidget {
                           AppColors.primary.withValues(alpha: 0.14),
                           AppColors.primary.withValues(alpha: 0.06),
                         ]
-                      : [const Color(0xFFD1FAE5), const Color(0xFFECFDF5)],
+                      : [AppColors.tint(const Color(0xFFD1FAE5)), AppColors.tint(const Color(0xFFECFDF5))],
                 ),
                 shape: BoxShape.circle,
               ),
@@ -1222,7 +1223,7 @@ class _GiftCardSuccessSheet extends StatelessWidget {
                     'processed. We\'ll update your purchase history once the redeem code is ready.'
                 : 'Your ${_usdLabel(purchase.unitPriceUsd)} ${purchase.brand} gift card is ready.',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14.5, height: 1.45, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14.5, height: 1.45, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
           if (hasCode) ...[
@@ -1244,7 +1245,7 @@ class _GiftCardSuccessSheet extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(14)),
-              child: const Text(
+              child: Text(
                 'Your card is being processed and will appear in your purchase history shortly.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, height: 1.4, color: AppColors.textSecondary),
@@ -1280,7 +1281,7 @@ class _RedeemField extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.textMuted),
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.textMuted),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -1293,7 +1294,7 @@ class _RedeemField extends StatelessWidget {
           const SizedBox(width: 10),
           GestureDetector(
             onTap: onCopy,
-            child: const Icon(Icons.copy_rounded, size: 18, color: AppColors.textSecondary),
+            child: Icon(Icons.copy_rounded, size: 18, color: AppColors.textSecondary),
           ),
         ],
       ),

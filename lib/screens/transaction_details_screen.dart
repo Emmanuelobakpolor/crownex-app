@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../models/app_transaction.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 
 /// Full details for one row of the merged feed, plus a receipt that can be
@@ -81,7 +82,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
@@ -102,7 +103,7 @@ class _TransactionDetailsScreenState extends State<TransactionDetailsScreen> {
                           onPressed: () => Navigator.of(context).pop(),
                         ),
                       ),
-                      const Text(
+                      Text(
                         'Transaction Details',
                         style: TextStyle(
                           fontSize: 20,
@@ -218,7 +219,7 @@ class _Receipt extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -235,7 +236,7 @@ class _Receipt extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          const Text(
+          Text(
             'Transaction receipt',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
@@ -244,7 +245,7 @@ class _Receipt extends StatelessWidget {
           Text(
             tx.title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
@@ -254,7 +255,7 @@ class _Receipt extends StatelessWidget {
           Text(
             amountText,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
@@ -279,14 +280,14 @@ class _Receipt extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: AppColors.border),
           const SizedBox(height: 6),
           for (final row in rows)
             _DetailRow(label: row.label, value: row.value),
           const SizedBox(height: 10),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: AppColors.border),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'Thank you for using CrownEx.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 12, color: AppColors.textMuted),
@@ -314,7 +315,7 @@ class _DetailRow extends StatelessWidget {
             width: 120,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13.5,
                 color: AppColors.textSecondary,
               ),
@@ -325,7 +326,7 @@ class _DetailRow extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,

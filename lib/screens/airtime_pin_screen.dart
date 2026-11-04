@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../services/api_exception.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import 'airtime_processing_screen.dart';
 
@@ -137,11 +138,11 @@ class _AirtimePinScreenState extends State<AirtimePinScreen> {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         body: SafeArea(
           bottom: false,
           child: Column(
@@ -159,7 +160,7 @@ class _AirtimePinScreenState extends State<AirtimePinScreen> {
                           onPressed: () => Navigator.of(context).pop(false),
                         ),
                       ),
-                      const Text(
+                      Text(
                         'Transaction Pin',
                         style: TextStyle(
                           fontSize: 18,
@@ -182,7 +183,7 @@ class _AirtimePinScreenState extends State<AirtimePinScreen> {
                               ? 'Confirm your pin'
                               : 'Create your pin',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary,
@@ -195,7 +196,7 @@ class _AirtimePinScreenState extends State<AirtimePinScreen> {
                           ? 'Enter your 4-digit transaction PIN to confirm this payment'
                           : 'Set a 4-digit pin for your virtual card',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         color: AppColors.textSecondary,
                       ),
@@ -246,7 +247,7 @@ class _CompactPinDots extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
+            color: AppColors.surfaceMuted,
             borderRadius: BorderRadius.circular(8),
           ),
           child: isFilled
@@ -287,7 +288,7 @@ class _SoftKeypad extends StatelessWidget {
     ];
 
     return Container(
-      color: const Color(0xFFD1D3D9),
+      color: AppColors.isDark ? AppColors.background : const Color(0xFFD1D3D9),
       padding: EdgeInsets.fromLTRB(4, 6, 4, 6 + bottomInset),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -303,7 +304,7 @@ class _SoftKeypad extends StatelessWidget {
                   return Expanded(
                     child: _Key(
                       onTap: onBackspace,
-                      child: const Icon(
+                      child: Icon(
                         Icons.backspace_outlined,
                         size: 22,
                         color: AppColors.textPrimary,
@@ -328,7 +329,7 @@ class _SoftKeypad extends StatelessWidget {
                         if (_letters(key).isNotEmpty)
                           Text(
                             _letters(key),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textSecondary,
@@ -373,7 +374,7 @@ class _Key extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 3),
       child: Material(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(6),
         child: InkWell(
           onTap: onTap,

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../services/api_exception.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import 'sign_in_screen.dart';
 import 'verify_otp_screen.dart';
@@ -75,7 +76,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: AppTheme.statusBarStyle.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
@@ -165,7 +166,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         child: Text.rich(
                           TextSpan(
                             text: 'Already have an account? ',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w400,

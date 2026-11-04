@@ -528,14 +528,22 @@ class WithdrawEstimate {
 
 /// One chain a coin can be sent on — [code] goes back to the backend as-is.
 class WithdrawNetwork {
-  const WithdrawNetwork({required this.code, required this.label});
+  const WithdrawNetwork({required this.code, required this.label, this.minAmount});
 
   final String code;
   final String label;
 
+  /// Quidax's own minimum on this network, when known — on top of the
+  /// coin's ₦ minimum ([WithdrawCoinOption.minAmount]).
+  final double? minAmount;
+
   factory WithdrawNetwork.fromJson(Map<String, dynamic> json) {
     final code = json['code'] as String? ?? '';
-    return WithdrawNetwork(code: code, label: json['label'] as String? ?? code);
+    return WithdrawNetwork(
+      code: code,
+      label: json['label'] as String? ?? code,
+      minAmount: _parseNullable(json['min_amount']),
+    );
   }
 }
 

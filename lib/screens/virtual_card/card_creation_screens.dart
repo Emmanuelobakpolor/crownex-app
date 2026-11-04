@@ -143,7 +143,7 @@ class _CardPinScreenState extends State<CardPinScreen> {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -185,7 +185,7 @@ class _CardPinScreenState extends State<CardPinScreen> {
                         : widget.isConfirm
                         ? 'Confirm your 4-digit pin'
                         : 'Set a 4-digit pin for your virtual card',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       color: AppColors.textSecondary,
                     ),
@@ -200,7 +200,7 @@ class _CardPinScreenState extends State<CardPinScreen> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF3F4F6),
+                          color: AppColors.surfaceMuted,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: filled
@@ -263,7 +263,7 @@ class _Keypad extends StatelessWidget {
       ['', '0', 'back'],
     ];
     return Container(
-      color: const Color(0xFFD1D3D9),
+      color: AppColors.isDark ? AppColors.background : const Color(0xFFD1D3D9),
       padding: EdgeInsets.fromLTRB(4, 6, 4, 6 + bottomInset),
       child: Column(
         children: rows.map((row) {
@@ -308,7 +308,7 @@ class _Key extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 3),
       child: Material(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(6),
         child: InkWell(
           onTap: onTap,
@@ -368,7 +368,7 @@ class _CardPreparingScreenState extends State<CardPreparingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -396,7 +396,7 @@ class _CardPreparingScreenState extends State<CardPreparingScreen> {
                           'from the Cards tab shortly.'
                     : 'This will take some couple of minutes',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
             ),
             const SizedBox(height: 36),
@@ -430,7 +430,7 @@ class CardCreationSuccessScreen extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.fromLTRB(24, 16, 24, 12 + bottom),
@@ -448,7 +448,7 @@ class CardCreationSuccessScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Enjoy your seamless payment transactions',
                 style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
@@ -522,7 +522,7 @@ class _CardDashboardState extends State<CardDashboard> {
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -666,7 +666,7 @@ class _CardDashboardState extends State<CardDashboard> {
                     ),
                   )
                 : (_transactions == null || _transactions!.isEmpty)
-                ? const SliverToBoxAdapter(
+                ? SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
                       child: Center(
@@ -705,7 +705,7 @@ class _ActionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Material(
-        color: const Color(0xFFF3F4F8),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: onTap,
@@ -718,7 +718,7 @@ class _ActionChip extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
@@ -772,13 +772,13 @@ class _TxRow extends StatelessWidget {
     switch (status) {
       case 'pending':
         pillColor = const Color(0xFFB45309);
-        pillBg = const Color(0xFFFEF3C7);
+        pillBg = AppColors.tint(const Color(0xFFFEF3C7));
       case 'declined':
         pillColor = const Color(0xFFDC2626);
-        pillBg = const Color(0xFFFEE2E2);
+        pillBg = AppColors.tint(const Color(0xFFFEE2E2));
       default:
         pillColor = const Color(0xFF16A34A);
-        pillBg = const Color(0xFFDCFCE7);
+        pillBg = AppColors.tint(const Color(0xFFDCFCE7));
     }
 
     return Padding(
@@ -788,8 +788,8 @@ class _TxRow extends StatelessWidget {
           Container(
             width: 40,
             height: 40,
-            decoration: const BoxDecoration(
-              color: Color(0xFFE8EEFF),
+            decoration: BoxDecoration(
+              color: AppColors.tint(const Color(0xFFE8EEFF)),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -814,7 +814,7 @@ class _TxRow extends StatelessWidget {
                 ),
                 Text(
                   time,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),
@@ -884,7 +884,7 @@ class _CardTransactionsScreenState extends State<CardTransactionsScreen> {
         .toList();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -922,7 +922,7 @@ class _CardTransactionsScreenState extends State<CardTransactionsScreen> {
                   : filtered == null
                   ? const Center(child: CircularProgressIndicator())
                   : filtered.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text('No transactions', style: TextStyle(color: AppColors.textSecondary)),
                     )
                   : ListView.builder(
@@ -1045,8 +1045,8 @@ class _FundWithdrawSheetState extends State<_FundWithdrawSheet> {
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
         constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: SingleChildScrollView(
@@ -1059,7 +1059,7 @@ class _FundWithdrawSheetState extends State<_FundWithdrawSheet> {
                   Expanded(
                     child: Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary,
@@ -1068,7 +1068,7 @@ class _FundWithdrawSheetState extends State<_FundWithdrawSheet> {
                   ),
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(false),
-                    child: const Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
+                    child: Icon(Icons.close_rounded, size: 24, color: AppColors.textPrimary),
                   ),
                 ],
               ),
@@ -1077,7 +1077,7 @@ class _FundWithdrawSheetState extends State<_FundWithdrawSheet> {
                 widget.isWithdraw
                     ? 'Move USD from your card back to your NGN wallet.'
                     : 'Fund your card from your NGN wallet balance.',
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 20),
               const VerifyFieldLabel('Amount (NGN)'),

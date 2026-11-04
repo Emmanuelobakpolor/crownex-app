@@ -132,7 +132,7 @@ class _IntroView extends StatelessWidget {
                           padding: const EdgeInsets.only(bottom: 10),
                           child: Text(
                             t,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               color: AppColors.textSecondary,
                             ),
@@ -193,7 +193,7 @@ class _PendingView extends StatelessWidget {
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             "Your details are under review. We'll notify you once\n"
             "it's complete and you can create your virtual card.",
             style: TextStyle(
@@ -295,7 +295,7 @@ class _PendingStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFF3F4F6),
+      color: AppColors.surfaceMuted,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -313,7 +313,7 @@ class _PendingStep extends StatelessWidget {
               else if (pending)
                 const MiniHourglass()
               else
-                const Icon(
+                Icon(
                   Icons.circle_outlined,
                   color: AppColors.textMuted,
                   size: 22,
@@ -332,7 +332,7 @@ class _PendingStep extends StatelessWidget {
                     ),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary,
                       ),
@@ -340,7 +340,7 @@ class _PendingStep extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
                 color: AppColors.textMuted,
               ),
@@ -385,7 +385,7 @@ class _ApprovedView extends StatelessWidget {
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   "Your details are under review. We'll notify you once\n"
                   "it's complete and you can create your virtual card.",
                   style: TextStyle(
