@@ -5,12 +5,14 @@ import 'package:provider/provider.dart';
 import '../models/vtu.dart';
 import '../models/wallet.dart';
 import '../services/api_exception.dart';
+import '../services/beneficiary_store.dart';
 import '../services/user_session.dart';
 import '../services/vtu_service.dart';
 import '../services/wallet_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
+import '../widgets/beneficiaries_sheet.dart';
 import 'airtime_pin_screen.dart';
 
 class AirtimeNetwork {
@@ -108,15 +110,66 @@ class _BuyAirtimeScreenState extends State<BuyAirtimeScreen> {
   double _ngnBalance = 0;
   int? _selectedQuickAmount;
   VtuTransaction? _lastTx;
+  List<Beneficiary> _saved = const [];
 
   @override
   void initState() {
     super.initState();
     final user = context.read<UserSession>().user;
     if (user != null && user.phone.isNotEmpty) {
-      _phoneController.text = user.phone;
+      _phoneController.text = toLocalPhone(user.phone);
     }
     _load();
+    _loadSaved();
+  }
+
+  int? get _userId => context.read<UserSession>().user?.id;
+
+  Future<void> _loadSaved() async {
+    final saved =
+        await BeneficiaryStore.instance.load(BeneficiaryKind.airtime, _userId);
+    if (mounted) setState(() => _saved = saved);
+  }
+
+  Future<void> _openSaved() async {
+    final picked = await showBeneficiariesSheet(
+      context: context,
+      kind: BeneficiaryKind.airtime,
+      userId: _userId,
+      beneficiaries: _saved,
+      searchHint: 'Search number or network',
+      leadingBuilder: (b) {
+        final style = _styleFor(b.data['network'] ?? '');
+        return _LogoBadge(
+          color: style.color,
+          logoText: style.logoText,
+          logoTextColor: style.logoTextColor,
+          logoAsset: style.logoAsset,
+          size: 44,
+        );
+      },
+    );
+    await _loadSaved();
+    if (picked == null || !mounted) return;
+    _selectRecent(
+      RecentAirtimeContact(
+        networkName: picked.data['network'] ?? '',
+        phone: picked.data['phone'] ?? '',
+      ),
+    );
+  }
+
+  void _saveBeneficiary(AirtimeNetwork network, String phone) {
+    BeneficiaryStore.instance.save(
+      BeneficiaryKind.airtime,
+      _userId,
+      Beneficiary(
+        key: '${network.name.toLowerCase()}:$phone',
+        title: phone,
+        subtitle: network.name,
+        data: {'network': network.name, 'phone': phone},
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -148,9 +201,10 @@ class _BuyAirtimeScreenState extends State<BuyAirtimeScreen> {
       final recents = <RecentAirtimeContact>[];
       final seenPhones = <String>{};
       for (final tx in transactions) {
-        if (tx.service != 'airtime' || !seenPhones.add(tx.phone)) continue;
+        final phone = toLocalPhone(tx.phone);
+        if (tx.service != 'airtime' || !seenPhones.add(phone)) continue;
         recents.add(
-          RecentAirtimeContact(networkName: tx.network, phone: tx.phone),
+          RecentAirtimeContact(networkName: tx.network, phone: phone),
         );
         if (recents.length >= 4) break;
       }
@@ -212,7 +266,7 @@ class _BuyAirtimeScreenState extends State<BuyAirtimeScreen> {
   void _selectRecent(RecentAirtimeContact contact) {
     if (_networks.isEmpty) return;
     setState(() {
-      _phoneController.text = contact.phone;
+      _phoneController.text = toLocalPhone(contact.phone);
       _selectedNetwork = _networks.firstWhere(
         (n) => n.name.toLowerCase() == contact.networkName.toLowerCase(),
         orElse: () => _selectedNetwork ?? _networks.first,
@@ -294,6 +348,7 @@ class _BuyAirtimeScreenState extends State<BuyAirtimeScreen> {
       ),
     );
 
+    if (paid == true && mounted) _saveBeneficiary(network, phone);
     if (paid == true && mounted) {
       final pending = _lastTx?.status == VtuStatus.pending;
       await showModalBottomSheet<void>(
@@ -462,9 +517,13 @@ class _BuyAirtimeScreenState extends State<BuyAirtimeScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              const _ScreenHeader(
+              _ScreenHeader(
                 title: 'Buy Airtime',
                 subtitle: 'Top up any Nigerian number',
+                trailing: SavedBeneficiariesButton(
+                  count: _saved.length,
+                  onTap: _openSaved,
+                ),
               ),
               Expanded(
                 child: AnimatedSwitcher(
@@ -489,10 +548,15 @@ class _BuyAirtimeScreenState extends State<BuyAirtimeScreen> {
 // ─── Shared chrome ───────────────────────────────────────────────────────────
 
 class _ScreenHeader extends StatelessWidget {
-  const _ScreenHeader({required this.title, required this.subtitle});
+  const _ScreenHeader({
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+  });
 
   final String title;
   final String subtitle;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -509,6 +573,8 @@ class _ScreenHeader extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
+            if (trailing != null)
+              Align(alignment: Alignment.centerRight, child: trailing),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

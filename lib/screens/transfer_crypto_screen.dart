@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import '../models/crypto.dart';
 import '../services/api_exception.dart';
+import '../services/beneficiary_store.dart';
 import '../services/crypto_service.dart';
+import '../services/user_session.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
+import '../widgets/beneficiaries_sheet.dart';
 
 String _fmt(double v, {int decimals = 2}) {
   if (v == 0) return decimals == 0 ? '0' : '0.${'0' * decimals}';
@@ -57,11 +61,84 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
   final _addressController = TextEditingController();
   final _qtyController = TextEditingController();
   bool _submitting = false;
+  List<Beneficiary> _saved = const [];
 
   @override
   void initState() {
     super.initState();
     _loadCoins();
+    _loadSaved();
+  }
+
+  int? get _userId => context.read<UserSession>().user?.id;
+
+  Future<void> _loadSaved() async {
+    final saved =
+        await BeneficiaryStore.instance.load(BeneficiaryKind.crypto, _userId);
+    if (mounted) setState(() => _saved = saved);
+  }
+
+  Future<void> _openSaved() async {
+    final picked = await showBeneficiariesSheet(
+      context: context,
+      kind: BeneficiaryKind.crypto,
+      userId: _userId,
+      beneficiaries: _saved,
+      searchHint: 'Search address, coin or network',
+      leadingBuilder: (b) {
+        final option = _options?.coins
+            .where((c) => c.symbol == b.data['coin'])
+            .firstOrNull;
+        return option != null
+            ? _TokenDot(coin: option.coin, size: 44)
+            : BeneficiaryInitialsAvatar(name: b.data['coin'] ?? '?');
+      },
+    );
+    await _loadSaved();
+    if (picked == null || !mounted) return;
+    final token = _options?.coins
+        .where((c) => c.symbol == picked.data['coin'])
+        .firstOrNull;
+    if (token == null) {
+      _showSnack('${(picked.data['coin'] ?? 'This coin').toUpperCase()} '
+          "can't be sent right now.");
+      return;
+    }
+    final network = token.networks
+        .where((n) => n.code == picked.data['network'])
+        .firstOrNull;
+    _addressController.text = picked.data['address'] ?? '';
+    setState(() {
+      _cryptoMode = true;
+      _token = token;
+      // A network Quidax has since switched off is left for the user to re-pick.
+      _network = network ??
+          (token.networks.length == 1 ? token.networks.first : null);
+    });
+  }
+
+  void _saveBeneficiary(
+    WithdrawCoinOption token,
+    WithdrawNetwork network,
+    String address,
+  ) {
+    final short = address.length > 14
+        ? '${address.substring(0, 6)}…${address.substring(address.length - 6)}'
+        : address;
+    BeneficiaryStore.instance.save(
+      BeneficiaryKind.crypto,
+      _userId,
+      Beneficiary(
+        key: '${token.symbol}:${network.code}:$address',
+        title: short,
+        subtitle: '${token.symbol.toUpperCase()} · ${network.label}',
+        data: {
+          'coin': token.symbol,
+          'network': network.code,
+          'address': address,
+        },
+      ),
+    );
   }
 
   @override
@@ -356,6 +433,7 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
         return;
       }
 
+      _saveBeneficiary(token, network, address);
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
@@ -413,7 +491,14 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              _Header(title: 'Transfer Crypto', onBack: () => Navigator.of(context).pop()),
+              _Header(
+                title: 'Transfer Crypto',
+                onBack: () => Navigator.of(context).pop(),
+                trailing: SavedBeneficiariesButton(
+                  count: _saved.length,
+                  onTap: _openSaved,
+                ),
+              ),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
@@ -1067,10 +1152,11 @@ class _TransferSubmittedSheet extends StatelessWidget {
 // ─── Shared widgets ──────────────────────────────────────────────────────────
 
 class _Header extends StatelessWidget {
-  const _Header({required this.title, required this.onBack});
+  const _Header({required this.title, required this.onBack, this.trailing});
 
   final String title;
   final VoidCallback onBack;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -1082,6 +1168,8 @@ class _Header extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             Align(alignment: Alignment.centerLeft, child: AuthBackButton(onPressed: onBack)),
+            if (trailing != null)
+              Align(alignment: Alignment.centerRight, child: trailing),
             Text(
               title,
               style: TextStyle(

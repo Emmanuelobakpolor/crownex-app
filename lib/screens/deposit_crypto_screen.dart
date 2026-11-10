@@ -10,6 +10,23 @@ import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import '../widgets/auto_convert_tile.dart';
 
+String _fmtNaira(double v) {
+  final decimals = v == v.roundToDouble() || v >= 1000 ? 0 : 2;
+  final parts = v.toStringAsFixed(decimals).split('.');
+  final whole = parts[0];
+  final buf = StringBuffer('₦');
+  for (var i = 0; i < whole.length; i++) {
+    if (i > 0 && (whole.length - i) % 3 == 0) buf.write(',');
+    buf.write(whole[i]);
+  }
+  return parts.length > 1 ? '$buf.${parts[1]}' : buf.toString();
+}
+
+String _trimNum(double v) =>
+    v.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
+
+const _stablecoins = {'usdt', 'usdc'};
+
 /// Deposit Crypto — select token/network, fetch and show the real Quidax
 /// deposit address (QR + copy).
 class DepositCryptoScreen extends StatefulWidget {
@@ -34,6 +51,10 @@ class _DepositCryptoScreenState extends State<DepositCryptoScreen> {
   String? _addressError;
   CryptoDepositAddress? _address;
 
+  /// Sell fee — what an auto-converted deposit is charged. Null until
+  /// loaded (or if the fees endpoint is down; the rate card still shows).
+  ({double flatUsd, double percent})? _sellFee;
+
   bool get _needsNetwork =>
       _token != null && kCryptoCoinNetworks.containsKey(_token!.symbol);
 
@@ -44,6 +65,16 @@ class _DepositCryptoScreenState extends State<DepositCryptoScreen> {
   void initState() {
     super.initState();
     _loadCoins();
+    _loadSellFee();
+  }
+
+  Future<void> _loadSellFee() async {
+    try {
+      final fee = await _crypto.getFee('sell');
+      if (mounted) setState(() => _sellFee = fee);
+    } catch (_) {
+      // Display-only — the card falls back to the raw live rate.
+    }
   }
 
   Future<void> _loadCoins() async {
@@ -194,6 +225,8 @@ class _DepositCryptoScreenState extends State<DepositCryptoScreen> {
                             token: _token!,
                             network: _network,
                             address: _address!,
+                            coins: _coins,
+                            sellFee: _sellFee,
                             onPickToken: () => setState(() => _address = null),
                             onCopy: _copyAddress,
                           )
@@ -283,6 +316,8 @@ class _DepositDetailsView extends StatelessWidget {
     required this.token,
     required this.network,
     required this.address,
+    required this.coins,
+    required this.sellFee,
     required this.onPickToken,
     required this.onCopy,
   });
@@ -290,6 +325,8 @@ class _DepositDetailsView extends StatelessWidget {
   final CryptoCoin token;
   final String? network;
   final CryptoDepositAddress address;
+  final List<CryptoCoin> coins;
+  final ({double flatUsd, double percent})? sellFee;
   final VoidCallback onPickToken;
   final VoidCallback onCopy;
 
@@ -403,6 +440,8 @@ class _DepositDetailsView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
+        _DepositRateCard(token: token, coins: coins, sellFee: sellFee),
+        const SizedBox(height: 14),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(14),
@@ -458,6 +497,129 @@ class _DepositDetailsView extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// What this deposit sells for in naira — ₦ per \$ after the sell fee's %,
+/// like "₦1,365/\$", plus the coin's own price for non-stablecoins.
+class _DepositRateCard extends StatelessWidget {
+  const _DepositRateCard({
+    required this.token,
+    required this.coins,
+    required this.sellFee,
+  });
+
+  final CryptoCoin token;
+  final List<CryptoCoin> coins;
+  final ({double flatUsd, double percent})? sellFee;
+
+  double? _rateOf(String symbol) =>
+      coins.where((c) => c.symbol == symbol).firstOrNull?.rateNgn;
+
+  @override
+  Widget build(BuildContext context) {
+    final symbol = token.symbol.toUpperCase();
+    final isStable = _stablecoins.contains(token.symbol);
+    final ngnPerUsd = _rateOf('usdt') ?? _rateOf('usdc');
+    final coinNgn = token.rateNgn ?? _rateOf(token.symbol);
+    // A stablecoin sells at its own NGN market; anything else is worth its
+    // USD value at the USDT/NGN rate.
+    final grossPerUsd = isStable ? coinNgn : ngnPerUsd;
+    final pct = sellFee?.percent ?? 0;
+    final netPerUsd = grossPerUsd != null ? grossPerUsd * (1 - pct / 100) : null;
+    final flat = sellFee?.flatUsd ?? 0;
+
+    final feeParts = [
+      if (flat > 0) '\$${_trimNum(flat)}',
+      if (pct > 0) '${_trimNum(pct)}%',
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'SELL RATE',
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textMuted,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _TokenDot(coin: token, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '$symbol → NGN',
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Text(
+                netPerUsd != null ? '${_fmtNaira(netPerUsd)}/\$' : 'Unavailable',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: netPerUsd != null
+                      ? AppColors.textPrimary
+                      : AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+          if (!isStable && coinNgn != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '1 $symbol',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                Text(
+                  '≈ ${_fmtNaira(coinNgn)}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 10),
+          Text(
+            [
+              if (feeParts.isNotEmpty) 'Sell fee ${feeParts.join(' + ')}',
+              'Converted at the live rate once the deposit confirms, '
+                  'when auto-convert is on.',
+            ].join(' · '),
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

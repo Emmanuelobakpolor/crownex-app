@@ -4,11 +4,13 @@ import 'package:provider/provider.dart';
 
 import '../models/vtu.dart';
 import '../services/api_exception.dart';
+import '../services/beneficiary_store.dart';
 import '../services/user_session.dart';
 import '../services/vtu_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
+import '../widgets/beneficiaries_sheet.dart';
 import 'airtime_pin_screen.dart';
 
 class _Recent {
@@ -118,14 +120,66 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
       _byCarrier[_selectedCarrier] ?? const [];
   List<DataPlan> get _plans => _selectedSubcategory?.plans ?? const [];
 
+  List<Beneficiary> _saved = const [];
+
   @override
   void initState() {
     super.initState();
     final user = context.read<UserSession>().user;
     if (user != null && user.phone.isNotEmpty) {
-      _phoneController.text = user.phone;
+      _phoneController.text = toLocalPhone(user.phone);
     }
     _load();
+    _loadSaved();
+  }
+
+  int? get _userId => context.read<UserSession>().user?.id;
+
+  Future<void> _loadSaved() async {
+    final saved =
+        await BeneficiaryStore.instance.load(BeneficiaryKind.data, _userId);
+    if (mounted) setState(() => _saved = saved);
+  }
+
+  Future<void> _openSaved() async {
+    final picked = await showBeneficiariesSheet(
+      context: context,
+      kind: BeneficiaryKind.data,
+      userId: _userId,
+      beneficiaries: _saved,
+      searchHint: 'Search number or network',
+      leadingBuilder: (b) {
+        final style = _styleFor(b.data['network'] ?? '');
+        return _Logo(
+          color: style.color,
+          logoText: style.logoText,
+          logoTextColor: style.logoTextColor,
+          logoAsset: style.logoAsset,
+          size: 44,
+        );
+      },
+    );
+    await _loadSaved();
+    if (picked == null || !mounted) return;
+    _selectRecent(
+      _Recent(
+        networkName: picked.data['network'] ?? '',
+        phone: picked.data['phone'] ?? '',
+      ),
+    );
+  }
+
+  void _saveBeneficiary(DataNetwork subcategory, String phone) {
+    BeneficiaryStore.instance.save(
+      BeneficiaryKind.data,
+      _userId,
+      Beneficiary(
+        key: '${subcategory.name.toLowerCase()}:$phone',
+        title: phone,
+        subtitle: subcategory.name,
+        data: {'network': subcategory.name, 'phone': phone},
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -155,8 +209,9 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
       final recents = <_Recent>[];
       final seenPhones = <String>{};
       for (final tx in transactions) {
-        if (tx.service != 'data' || !seenPhones.add(tx.phone)) continue;
-        recents.add(_Recent(networkName: tx.network, phone: tx.phone));
+        final phone = toLocalPhone(tx.phone);
+        if (tx.service != 'data' || !seenPhones.add(phone)) continue;
+        recents.add(_Recent(networkName: tx.network, phone: phone));
         if (recents.length >= 4) break;
       }
 
@@ -224,7 +279,7 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
       if (match != null) break;
     }
     setState(() {
-      _phoneController.text = recent.phone;
+      _phoneController.text = toLocalPhone(recent.phone);
       if (match != null) {
         _selectedCarrier = matchCarrier;
         _selectedSubcategory = match;
@@ -300,6 +355,7 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
       ),
     );
 
+    if (paid == true && mounted) _saveBeneficiary(subcategory, phone);
     if (paid == true && mounted) {
       final pending = _lastTx?.status == VtuStatus.pending;
       await showModalBottomSheet<void>(
@@ -520,9 +576,13 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              const _ScreenHeader(
+              _ScreenHeader(
                 title: 'Buy Data',
                 subtitle: 'Choose a plan for any network',
+                trailing: SavedBeneficiariesButton(
+                  count: _saved.length,
+                  onTap: _openSaved,
+                ),
               ),
               Expanded(
                 child: AnimatedSwitcher(
@@ -547,10 +607,15 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
 // ─── Shared chrome ───────────────────────────────────────────────────────────
 
 class _ScreenHeader extends StatelessWidget {
-  const _ScreenHeader({required this.title, required this.subtitle});
+  const _ScreenHeader({
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+  });
 
   final String title;
   final String subtitle;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -567,6 +632,8 @@ class _ScreenHeader extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
+            if (trailing != null)
+              Align(alignment: Alignment.centerRight, child: trailing),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

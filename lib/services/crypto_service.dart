@@ -27,6 +27,18 @@ class CryptoService {
     return coins.map((c) => CryptoCoin.fromJson(c as Map<String, dynamic>)).toList();
   }
 
+  /// GET /crypto/fees/ — one fee row (buy/sell/swap/withdraw), for display
+  /// estimates only; the real fee is frozen onto each quote.
+  Future<({double flatUsd, double percent})> getFee(String feeType) async {
+    final data = await _client.get('/crypto/fees/');
+    final fees = data['fees'] as Map<String, dynamic>? ?? const {};
+    final row = fees[feeType] as Map<String, dynamic>? ?? const {};
+    return (
+      flatUsd: double.tryParse(row['flat_usd']?.toString() ?? '') ?? 0,
+      percent: double.tryParse(row['percent']?.toString() ?? '') ?? 0,
+    );
+  }
+
   /// POST /crypto/account/ensure/ — best-effort Quidax sub-account warm-up.
   /// Fire-and-forget: never throws, so callers can call this without
   /// awaiting or wrapping it in try/catch. Meant to be called the instant

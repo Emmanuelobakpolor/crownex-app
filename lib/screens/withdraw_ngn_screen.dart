@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import '../models/wallet.dart';
 import '../services/api_exception.dart';
+import '../services/beneficiary_store.dart';
+import '../services/user_session.dart';
 import '../services/wallet_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
+import '../widgets/beneficiaries_sheet.dart';
 
 /// Hardcoded major Nigerian bank codes — used only if GET /wallet/banks/
 /// (which proxies Flutterwave) is unreachable.
@@ -58,6 +62,8 @@ class _WithdrawNgnScreenState extends State<WithdrawNgnScreen> {
 
   bool _submitting = false;
 
+  List<Beneficiary> _saved = const [];
+
   static const _quickAmounts = [1000, 2000, 5000, 10000, 20000, 50000];
 
   @override
@@ -65,7 +71,41 @@ class _WithdrawNgnScreenState extends State<WithdrawNgnScreen> {
     super.initState();
     _loadBalance();
     _loadBanks();
+    _loadSaved();
     _accountController.addListener(_onAccountChanged);
+  }
+
+  int? get _userId => context.read<UserSession>().user?.id;
+
+  Future<void> _loadSaved() async {
+    final saved =
+        await BeneficiaryStore.instance.load(BeneficiaryKind.bank, _userId);
+    if (mounted) setState(() => _saved = saved);
+  }
+
+  Future<void> _openSaved() async {
+    final picked = await showBeneficiariesSheet(
+      context: context,
+      kind: BeneficiaryKind.bank,
+      userId: _userId,
+      beneficiaries: _saved,
+    );
+    await _loadSaved();
+    if (picked == null || !mounted) return;
+    final code = picked.data['bankCode'] ?? '';
+    final number = picked.data['accountNumber'] ?? '';
+    if (code.isEmpty || number.isEmpty) return;
+    final bank = _banks.where((b) => b.code == code).firstOrNull ??
+        Bank(name: picked.data['bankName'] ?? picked.subtitle, code: code);
+    _accountController.text = number;
+    setState(() {
+      _selectedBank = bank;
+      _resolvedAccountName = null;
+      _verifyError = null;
+    });
+    // Re-resolve rather than trusting the saved name — it's one quick call
+    // and catches closed or renamed accounts before money moves.
+    await _verifyAccount();
   }
 
   @override
@@ -212,6 +252,7 @@ class _WithdrawNgnScreenState extends State<WithdrawNgnScreen> {
     final amount = _amount!;
 
     setState(() => _submitting = true);
+    final userId = _userId;
 
     try {
       final reference = await _wallet.requestWithdrawal(
@@ -220,6 +261,23 @@ class _WithdrawNgnScreenState extends State<WithdrawNgnScreen> {
         bankName: bank.name,
         bankCode: bank.code,
         accountNumber: _accountController.text.trim(),
+      );
+
+      final accountNumber = _accountController.text.trim();
+      BeneficiaryStore.instance.save(
+        BeneficiaryKind.bank,
+        userId,
+        Beneficiary(
+          key: '${bank.code}:$accountNumber',
+          title: _resolvedAccountName!,
+          subtitle: bank.name,
+          trailing: accountNumber,
+          data: {
+            'bankCode': bank.code,
+            'bankName': bank.name,
+            'accountNumber': accountNumber,
+          },
+        ),
       );
 
       if (!mounted) return;
@@ -293,7 +351,10 @@ class _WithdrawNgnScreenState extends State<WithdrawNgnScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              const _WithdrawHeader(),
+              _WithdrawHeader(
+                savedCount: _saved.length,
+                onOpenSaved: _openSaved,
+              ),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
@@ -383,7 +444,10 @@ String _bankInitials(String name) {
 // ─── Header ─────────────────────────────────────────────────────────────────
 
 class _WithdrawHeader extends StatelessWidget {
-  const _WithdrawHeader();
+  const _WithdrawHeader({required this.savedCount, required this.onOpenSaved});
+
+  final int savedCount;
+  final VoidCallback onOpenSaved;
 
   @override
   Widget build(BuildContext context) {
@@ -398,6 +462,13 @@ class _WithdrawHeader extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: AuthBackButton(
                 onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: SavedBeneficiariesButton(
+                count: savedCount,
+                onTap: onOpenSaved,
               ),
             ),
             Column(

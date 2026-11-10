@@ -26,6 +26,20 @@ String _fmt(double v, {int decimals = 2}) {
 
 String _fmtNgn(double v) => '₦${_fmt(v)}';
 
+/// Dollar amount — extra decimals for sub-$1 prices (SHIB, DOGE) so they
+/// don't all read "$0.00".
+String _fmtUsd(double v) {
+  if (v > 0 && v < 0.01) {
+    return '\$${v.toStringAsFixed(8).replaceFirst(RegExp(r'0+$'), '')}';
+  }
+  return '\$${_fmt(v, decimals: v > 0 && v < 1 ? 4 : 2)}';
+}
+
+/// Crypto values are shown in USD, converted from the NGN prices at the live
+/// USDT/NGN rate; falls back to ₦ if that rate is unavailable.
+String _fmtValue(double ngn, double? ngnPerUsd) =>
+    ngnPerUsd != null && ngnPerUsd > 0 ? _fmtUsd(ngn / ngnPerUsd) : _fmtNgn(ngn);
+
 /// Crypto Hub — the front door to every crypto feature: portfolio value,
 /// quick actions, holdings, and the live market. Fires a best-effort
 /// Quidax sub-account warm-up the instant it opens.
@@ -82,6 +96,10 @@ class _CryptoHubScreenState extends State<CryptoHubScreen> {
 
   Map<String, CryptoCoin> get _coinBySymbol => {for (final c in _coins) c.symbol: c};
 
+  /// NGN per USD — USDT's live naira price (same source the backend uses).
+  double? get _ngnPerUsd =>
+      _coinBySymbol['usdt']?.rateNgn ?? _coinBySymbol['usdc']?.rateNgn;
+
   double get _portfolioValueNgn {
     final priceMap = _coinBySymbol;
     var total = 0.0;
@@ -136,6 +154,7 @@ class _CryptoHubScreenState extends State<CryptoHubScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                     child: _PortfolioCard(
                       valueNgn: _portfolioValueNgn,
+                      ngnPerUsd: _ngnPerUsd,
                       loading: _loading,
                       holdingsCount: _holdings.length,
                       onBuy: _openBuy,
@@ -188,6 +207,7 @@ class _CryptoHubScreenState extends State<CryptoHubScreen> {
                           return _HoldingTile(
                             wallet: wallet,
                             coin: coin,
+                            ngnPerUsd: _ngnPerUsd,
                             onTap: coin == null ? null : _openSell,
                           );
                         },
@@ -206,7 +226,11 @@ class _CryptoHubScreenState extends State<CryptoHubScreen> {
                       itemCount: _coins.length,
                       separatorBuilder: (context, index) => const SizedBox(height: 10),
                       itemBuilder: (context, index) =>
-                          _MarketTile(coin: _coins[index], onTap: _openBuy),
+                          _MarketTile(
+                            coin: _coins[index],
+                            ngnPerUsd: _ngnPerUsd,
+                            onTap: _openBuy,
+                          ),
                     ),
                   ),
                 ],
@@ -251,6 +275,7 @@ class _HubHeader extends StatelessWidget {
 class _PortfolioCard extends StatelessWidget {
   const _PortfolioCard({
     required this.valueNgn,
+    required this.ngnPerUsd,
     required this.loading,
     required this.holdingsCount,
     required this.onBuy,
@@ -258,6 +283,7 @@ class _PortfolioCard extends StatelessWidget {
   });
 
   final double valueNgn;
+  final double? ngnPerUsd;
   final bool loading;
   final int holdingsCount;
   final VoidCallback onBuy;
@@ -315,7 +341,7 @@ class _PortfolioCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            loading ? '₦••••••' : _fmtNgn(valueNgn),
+            loading ? '\$••••••' : _fmtValue(valueNgn, ngnPerUsd),
             style: const TextStyle(
               fontSize: 36,
               fontWeight: FontWeight.w800,
@@ -512,10 +538,16 @@ class _SectionLabel extends StatelessWidget {
 // ─── Holding tile ────────────────────────────────────────────────────────────
 
 class _HoldingTile extends StatelessWidget {
-  const _HoldingTile({required this.wallet, required this.coin, this.onTap});
+  const _HoldingTile({
+    required this.wallet,
+    required this.coin,
+    required this.ngnPerUsd,
+    this.onTap,
+  });
 
   final CryptoWalletBalance wallet;
   final CryptoCoin? coin;
+  final double? ngnPerUsd;
   final VoidCallback? onTap;
 
   @override
@@ -574,7 +606,7 @@ class _HoldingTile extends StatelessWidget {
                 ),
               ),
               Text(
-                valueNgn != null ? _fmtNgn(valueNgn) : '—',
+                valueNgn != null ? _fmtValue(valueNgn, ngnPerUsd) : '—',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -592,9 +624,14 @@ class _HoldingTile extends StatelessWidget {
 // ─── Market tile ─────────────────────────────────────────────────────────────
 
 class _MarketTile extends StatelessWidget {
-  const _MarketTile({required this.coin, required this.onTap});
+  const _MarketTile({
+    required this.coin,
+    required this.ngnPerUsd,
+    required this.onTap,
+  });
 
   final CryptoCoin coin;
+  final double? ngnPerUsd;
   final VoidCallback onTap;
 
   @override
@@ -635,7 +672,9 @@ class _MarketTile extends StatelessWidget {
                 ),
               ),
               Text(
-                coin.rateNgn != null ? _fmtNgn(coin.rateNgn!) : 'Unavailable',
+                coin.rateNgn != null
+                    ? _fmtValue(coin.rateNgn!, ngnPerUsd)
+                    : 'Unavailable',
                 style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
