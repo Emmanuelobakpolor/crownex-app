@@ -62,6 +62,7 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
   final _qtyController = TextEditingController();
   bool _submitting = false;
   List<Beneficiary> _saved = const [];
+  bool _saveAsBeneficiary = false;
 
   @override
   void initState() {
@@ -117,11 +118,32 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
     });
   }
 
+  String _beneficiaryKey(
+    WithdrawCoinOption token,
+    WithdrawNetwork network,
+    String address,
+  ) =>
+      '${token.symbol}:${network.code}:$address';
+
+  bool _isSaved(String key) => _saved.any((b) => b.key == key);
+
+  /// A complete recipient that isn't saved yet — offer the save toggle.
+  bool _canOfferSave(WithdrawCoinOption? token) {
+    final network = _network;
+    final address = _addressController.text.trim();
+    if (token == null || network == null || address.isEmpty) return false;
+    return !_isSaved(_beneficiaryKey(token, network, address));
+  }
+
+  /// Only remembers recipients the user opted to save; already-saved ones
+  /// are refreshed so they move to the top.
   void _saveBeneficiary(
     WithdrawCoinOption token,
     WithdrawNetwork network,
     String address,
   ) {
+    final key = _beneficiaryKey(token, network, address);
+    if (!_saveAsBeneficiary && !_isSaved(key)) return;
     final short = address.length > 14
         ? '${address.substring(0, 6)}…${address.substring(address.length - 6)}'
         : address;
@@ -129,7 +151,7 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
       BeneficiaryKind.crypto,
       _userId,
       Beneficiary(
-        key: '${token.symbol}:${network.code}:$address',
+        key: key,
         title: short,
         subtitle: '${token.symbol.toUpperCase()} · ${network.label}',
         data: {
@@ -578,6 +600,14 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
                             quantity: _quantity,
                             usdRateNgn: _options?.usdRateNgn,
                             error: _amountError,
+                          ),
+                        ],
+                        if (_canOfferSave(token)) ...[
+                          const SizedBox(height: 14),
+                          SaveBeneficiaryToggle(
+                            value: _saveAsBeneficiary,
+                            onChanged: (v) =>
+                                setState(() => _saveAsBeneficiary = v),
                           ),
                         ],
                       ],

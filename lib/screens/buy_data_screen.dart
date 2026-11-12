@@ -121,6 +121,7 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
   List<DataPlan> get _plans => _selectedSubcategory?.plans ?? const [];
 
   List<Beneficiary> _saved = const [];
+  bool _saveAsBeneficiary = false;
 
   @override
   void initState() {
@@ -169,12 +170,29 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
     );
   }
 
+  String _beneficiaryKey(DataNetwork subcategory, String phone) =>
+      '${subcategory.name.toLowerCase()}:$phone';
+
+  bool _isSaved(String key) => _saved.any((b) => b.key == key);
+
+  /// A complete recipient that isn't saved yet — offer the save toggle.
+  bool get _canOfferSave {
+    final subcategory = _selectedSubcategory;
+    final phone = _phoneController.text.replaceAll(RegExp(r'\D'), '');
+    if (subcategory == null || phone.length < 10) return false;
+    return !_isSaved(_beneficiaryKey(subcategory, phone));
+  }
+
+  /// Only remembers recipients the user opted to save; already-saved ones
+  /// are refreshed so they move to the top.
   void _saveBeneficiary(DataNetwork subcategory, String phone) {
+    final key = _beneficiaryKey(subcategory, phone);
+    if (!_saveAsBeneficiary && !_isSaved(key)) return;
     BeneficiaryStore.instance.save(
       BeneficiaryKind.data,
       _userId,
       Beneficiary(
-        key: '${subcategory.name.toLowerCase()}:$phone',
+        key: key,
         title: phone,
         subtitle: subcategory.name,
         data: {'network': subcategory.name, 'phone': phone},
@@ -551,6 +569,13 @@ class _BuyDataScreenState extends State<BuyDataScreen> {
                 ),
               );
             }),
+          if (_canOfferSave) ...[
+            const SizedBox(height: 16),
+            SaveBeneficiaryToggle(
+              value: _saveAsBeneficiary,
+              onChanged: (v) => setState(() => _saveAsBeneficiary = v),
+            ),
+          ],
           const SizedBox(height: 16),
           const _InfoBanner(
             text:

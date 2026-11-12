@@ -63,6 +63,7 @@ class _WithdrawNgnScreenState extends State<WithdrawNgnScreen> {
   bool _submitting = false;
 
   List<Beneficiary> _saved = const [];
+  bool _saveAsBeneficiary = false;
 
   static const _quickAmounts = [1000, 2000, 5000, 10000, 20000, 50000];
 
@@ -246,6 +247,15 @@ class _WithdrawNgnScreenState extends State<WithdrawNgnScreen> {
     _amountFocus.unfocus();
   }
 
+  bool _isSaved(String key) => _saved.any((b) => b.key == key);
+
+  /// A verified recipient that isn't saved yet — offer the save toggle.
+  bool get _canOfferSave {
+    final bank = _selectedBank;
+    if (bank == null || _resolvedAccountName == null) return false;
+    return !_isSaved('${bank.code}:${_accountController.text.trim()}');
+  }
+
   Future<void> _submit() async {
     if (!_canSubmit) return;
     final bank = _selectedBank!;
@@ -264,21 +274,26 @@ class _WithdrawNgnScreenState extends State<WithdrawNgnScreen> {
       );
 
       final accountNumber = _accountController.text.trim();
-      BeneficiaryStore.instance.save(
-        BeneficiaryKind.bank,
-        userId,
-        Beneficiary(
-          key: '${bank.code}:$accountNumber',
-          title: _resolvedAccountName!,
-          subtitle: bank.name,
-          trailing: accountNumber,
-          data: {
-            'bankCode': bank.code,
-            'bankName': bank.name,
-            'accountNumber': accountNumber,
-          },
-        ),
-      );
+      final key = '${bank.code}:$accountNumber';
+      // Only remember recipients the user opted to save; already-saved ones
+      // are refreshed so they move to the top.
+      if (_saveAsBeneficiary || _isSaved(key)) {
+        BeneficiaryStore.instance.save(
+          BeneficiaryKind.bank,
+          userId,
+          Beneficiary(
+            key: key,
+            title: _resolvedAccountName!,
+            subtitle: bank.name,
+            trailing: accountNumber,
+            data: {
+              'bankCode': bank.code,
+              'bankName': bank.name,
+              'accountNumber': accountNumber,
+            },
+          ),
+        );
+      }
 
       if (!mounted) return;
       setState(() {
@@ -395,6 +410,14 @@ class _WithdrawNgnScreenState extends State<WithdrawNgnScreen> {
                         verifyError: _verifyError,
                         onAccountChanged: (_) => setState(() {}),
                       ),
+                      if (_canOfferSave) ...[
+                        const SizedBox(height: 12),
+                        SaveBeneficiaryToggle(
+                          value: _saveAsBeneficiary,
+                          onChanged: (v) =>
+                              setState(() => _saveAsBeneficiary = v),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       const _InfoBanner(),
                     ],

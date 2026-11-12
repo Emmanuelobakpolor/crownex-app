@@ -5,8 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Which flow a saved beneficiary belongs to — each keeps its own list.
 enum BeneficiaryKind { bank, airtime, data, crypto }
 
-/// A recipient remembered after a successful transfer / purchase, so the
-/// user can tap it to refill the form next time ("Send again").
+/// A recipient the user chose to remember after a successful transfer /
+/// purchase, so they can tap it to refill the form next time ("Send again").
 class Beneficiary {
   const Beneficiary({
     required this.key,
