@@ -3,10 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../services/api_exception.dart';
+import '../services/support_service.dart';
 import '../services/user_session.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
+import 'support_chat_screen.dart';
 
 /// Contact Support form — collects issue details for Crownex support.
 class ContactSupportScreen extends StatefulWidget {
@@ -564,7 +567,7 @@ class _SupportHeroBanner extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Call, WhatsApp, or email — usually within 24 hours',
+                  'Live chat, call, WhatsApp or email',
                   style: TextStyle(
                     fontSize: 12.5,
                     height: 1.35,
@@ -600,6 +603,8 @@ class _QuickContactSection extends StatelessWidget {
             letterSpacing: 0.2,
           ),
         ),
+        const SizedBox(height: 10),
+        const _LiveChatTile(),
         const SizedBox(height: 10),
         _ContactTile(
           icon: Icons.call_rounded,
@@ -639,6 +644,55 @@ class _QuickContactSection extends StatelessWidget {
   }
 }
 
+/// Opens the in-app support chat; shows a badge for agent replies the user
+/// hasn't read yet, refreshed whenever they come back from the chat.
+class _LiveChatTile extends StatefulWidget {
+  const _LiveChatTile();
+
+  @override
+  State<_LiveChatTile> createState() => _LiveChatTileState();
+}
+
+class _LiveChatTileState extends State<_LiveChatTile> {
+  int _unread = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshUnread();
+  }
+
+  Future<void> _refreshUnread() async {
+    try {
+      final unread = await SupportService.instance.unreadCount();
+      if (mounted) setState(() => _unread = unread);
+    } on ApiException {
+      // Badge is a nicety — leave it as is.
+    }
+  }
+
+  Future<void> _open() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const SupportChatScreen()),
+    );
+    _refreshUnread();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _ContactTile(
+      icon: Icons.support_agent_rounded,
+      title: 'Live chat',
+      subtitle: _unread > 0
+          ? '$_unread new ${_unread == 1 ? 'reply' : 'replies'} from support'
+          : 'Chat with our team in the app',
+      actionLabel: _unread > 0 ? 'Open chat' : 'Start chat',
+      badge: _unread,
+      onTap: _open,
+    );
+  }
+}
+
 class _ContactTile extends StatelessWidget {
   const _ContactTile({
     required this.icon,
@@ -646,6 +700,7 @@ class _ContactTile extends StatelessWidget {
     required this.subtitle,
     required this.actionLabel,
     required this.onTap,
+    this.badge = 0,
   });
 
   final IconData icon;
@@ -653,6 +708,7 @@ class _ContactTile extends StatelessWidget {
   final String subtitle;
   final String actionLabel;
   final VoidCallback onTap;
+  final int badge;
 
   @override
   Widget build(BuildContext context) {
@@ -716,6 +772,26 @@ class _ContactTile extends StatelessWidget {
                   ],
                 ),
               ),
+              if (badge > 0)
+                Container(
+                  constraints: const BoxConstraints(minWidth: 22),
+                  height: 22,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  margin: const EdgeInsets.only(right: 4),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Text(
+                    badge > 99 ? '99+' : '$badge',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
               Icon(
                 Icons.chevron_right_rounded,
                 color: AppColors.textMuted,
