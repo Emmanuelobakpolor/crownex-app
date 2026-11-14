@@ -19,7 +19,12 @@ import '../widgets/auth_widgets.dart';
 /// and in the foreground, fetching only messages newer than the last one it
 /// has, plus whether an agent is typing.
 class SupportChatScreen extends StatefulWidget {
-  const SupportChatScreen({super.key});
+  const SupportChatScreen({super.key, this.onClose});
+
+  /// Set when the chat is shown inside the floating launcher panel
+  /// (SupportChatLauncher) rather than as a pushed route: the header shows
+  /// a minimise button that calls this instead of a back arrow.
+  final VoidCallback? onClose;
 
   @override
   State<SupportChatScreen> createState() => _SupportChatScreenState();
@@ -326,14 +331,16 @@ class _SupportChatScreenState extends State<SupportChatScreen>
     final firstName = (user?.fullName ?? '').trim().split(' ').first;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: AppTheme.statusBarStyle.copyWith(statusBarColor: Colors.transparent),
+      value: AppTheme.statusBarStyle.copyWith(
+        statusBarColor: Colors.transparent,
+      ),
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
           bottom: false,
           child: Column(
             children: [
-              _ChatHeader(typing: _adminTyping),
+              _ChatHeader(typing: _adminTyping, onClose: widget.onClose),
               Expanded(child: _buildBody(firstName)),
               _Composer(
                 controller: _input,
@@ -360,7 +367,9 @@ class _SupportChatScreenState extends State<SupportChatScreen>
         firstName: firstName,
         onTopic: (topic) {
           _input.text = '$topic — ';
-          _input.selection = TextSelection.collapsed(offset: _input.text.length);
+          _input.selection = TextSelection.collapsed(
+            offset: _input.text.length,
+          );
           _inputFocus.requestFocus();
         },
       );
@@ -382,10 +391,14 @@ class _SupportChatScreenState extends State<SupportChatScreen>
             return switch (row) {
               _TypingRow() => const _TypingBubble(key: ValueKey('typing')),
               _DateRow(:final day) => _DateChip(
-                  key: ValueKey('d${day.year}-${day.month}-${day.day}'),
-                  day: day,
-                ),
-              _MessageRow(:final message, :final firstInGroup, :final lastInGroup) =>
+                key: ValueKey('d${day.year}-${day.month}-${day.day}'),
+                day: day,
+              ),
+              _MessageRow(
+                :final message,
+                :final firstInGroup,
+                :final lastInGroup,
+              ) =>
                 _AnimatedEntry(
                   key: ValueKey(_keyOf(message)),
                   animate: !_initialKeys.contains(_keyOf(message)),
@@ -460,9 +473,10 @@ class _MessageRow extends _Row {
 // ─── Header ──────────────────────────────────────────────────────────────────
 
 class _ChatHeader extends StatelessWidget {
-  const _ChatHeader({required this.typing});
+  const _ChatHeader({required this.typing, this.onClose});
 
   final bool typing;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -474,8 +488,10 @@ class _ChatHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const AuthBackButton(),
-          const SizedBox(width: 12),
+          if (onClose == null) ...[
+            const AuthBackButton(),
+            const SizedBox(width: 12),
+          ],
           const _AgentAvatar(),
           const SizedBox(width: 12),
           Expanded(
@@ -546,7 +562,39 @@ class _ChatHeader extends StatelessWidget {
               ],
             ),
           ),
+          if (onClose != null) _MinimiseButton(onTap: onClose!),
         ],
+      ),
+    );
+  }
+}
+
+/// Chevron that folds the floating chat panel back into its bubble.
+class _MinimiseButton extends StatelessWidget {
+  const _MinimiseButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.fieldFill,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 24,
+            color: AppColors.textPrimary,
+          ),
+        ),
       ),
     );
   }
@@ -799,7 +847,9 @@ class _MessageBubble extends StatelessWidget {
               BoxShadow(
                 color: mine
                     ? AppColors.primary.withValues(alpha: 0.22)
-                    : Colors.black.withValues(alpha: AppColors.isDark ? 0 : 0.04),
+                    : Colors.black.withValues(
+                        alpha: AppColors.isDark ? 0 : 0.04,
+                      ),
                 blurRadius: 10,
                 offset: const Offset(0, 3),
               ),
@@ -821,8 +871,9 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(top: firstInGroup ? 10 : 2),
       child: Column(
-        crossAxisAlignment:
-            mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: mine
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           if (!mine && firstInGroup)
             Padding(
@@ -837,8 +888,9 @@ class _MessageBubble extends StatelessWidget {
               ),
             ),
           Row(
-            mainAxisAlignment:
-                mine ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment: mine
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (!mine) ...[
@@ -1137,7 +1189,10 @@ class _WelcomeState extends StatelessWidget {
         curve: Curves.easeOutCubic,
         builder: (_, t, child) => Opacity(
           opacity: t,
-          child: Transform.translate(offset: Offset(0, 24 * (1 - t)), child: child),
+          child: Transform.translate(
+            offset: Offset(0, 24 * (1 - t)),
+            child: child,
+          ),
         ),
         child: Column(
           children: [
@@ -1416,11 +1471,27 @@ class _SendButton extends StatelessWidget {
 // ─── Formatting ──────────────────────────────────────────────────────────────
 
 const _months = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 const _weekdays = [
-  'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
 ];
 
 String _formatTime(DateTime t) {

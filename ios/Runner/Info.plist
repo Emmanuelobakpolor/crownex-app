@@ -34,7 +34,7 @@
 		<string>https</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Crownex uses your camera to update your profile picture.</string>
+	<string>Crownex uses your camera to update your profile picture and to scan wallet QR codes.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Crownex uses your photo library to update your profile picture.</string>
 	<key>UIApplicationSceneManifest</key>

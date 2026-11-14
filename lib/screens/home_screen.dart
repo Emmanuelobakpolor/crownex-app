@@ -11,6 +11,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/kyc_banner.dart';
 import '../widgets/kyc_guard.dart';
+import '../widgets/support_chat_launcher.dart';
 import '../widgets/user_avatar.dart';
 import 'buy_airtime_screen.dart';
 import 'buy_data_screen.dart';
@@ -41,6 +42,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _tabIndex = 0;
   final VirtualCardController _cardController = VirtualCardController();
+  final _chatLauncher = GlobalKey<SupportChatLauncherState>();
 
   @override
   void dispose() {
@@ -77,27 +79,36 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: AppColors.background,
         body: SafeArea(
           bottom: false,
-          child: IndexedStack(
-            index: _tabIndex,
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              _HomeTab(
-                fallbackFullName: widget.fullName,
-                greeting: _greeting,
-                onOpenVirtualCard: _openVirtualCardTab,
-                onOpenSettings: _openSettingsTab,
+              IndexedStack(
+                index: _tabIndex,
+                children: [
+                  _HomeTab(
+                    fallbackFullName: widget.fullName,
+                    greeting: _greeting,
+                    onOpenVirtualCard: _openVirtualCardTab,
+                    onOpenSettings: _openSettingsTab,
+                  ),
+                  ServicesScreen(onOpenVirtualCard: _openVirtualCardTab),
+                  VirtualCardTab(
+                    controller: _cardController,
+                    onClose: _openHomeTab,
+                  ),
+                  SettingsScreen(fullName: widget.fullName),
+                ],
               ),
-              ServicesScreen(onOpenVirtualCard: _openVirtualCardTab),
-              VirtualCardTab(
-                controller: _cardController,
-                onClose: _openHomeTab,
-              ),
-              SettingsScreen(fullName: widget.fullName),
+              SupportChatLauncher(key: _chatLauncher),
             ],
           ),
         ),
         bottomNavigationBar: _HomeBottomNav(
           currentIndex: _tabIndex,
-          onTap: (i) => setState(() => _tabIndex = i),
+          onTap: (i) {
+            _chatLauncher.currentState?.close();
+            setState(() => _tabIndex = i);
+          },
         ),
       ),
     );

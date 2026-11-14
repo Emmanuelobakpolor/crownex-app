@@ -5,12 +5,14 @@ import 'package:provider/provider.dart';
 import '../models/crypto.dart';
 import '../services/api_exception.dart';
 import '../services/beneficiary_store.dart';
+import '../services/crypto_qr.dart';
 import '../services/crypto_service.dart';
 import '../services/user_session.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_widgets.dart';
 import '../widgets/beneficiaries_sheet.dart';
+import 'qr_scanner_screen.dart';
 
 String _fmt(double v, {int decimals = 2}) {
   if (v == 0) return decimals == 0 ? '0' : '0.${'0' * decimals}';
@@ -64,6 +66,15 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
   List<Beneficiary> _saved = const [];
   bool _saveAsBeneficiary = false;
 
+  /// Memo / destination tag from the last scanned QR — we can't send one,
+  /// so it's shown as a warning until the address is edited.
+  String? _scannedMemo;
+
+  /// Payment-URI coins that only ever mean that coin. `ethereum:`, `tron:`,
+  /// `solana:` etc. are also used for tokens on those chains (USDT…), so
+  /// they don't pick or contradict the selected token.
+  static const _coinOnlySchemes = {'btc', 'ltc', 'doge', 'bch', 'xrp', 'xlm', 'ada', 'dash'};
+
   @override
   void initState() {
     super.initState();
@@ -109,6 +120,7 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
         .where((n) => n.code == picked.data['network'])
         .firstOrNull;
     _addressController.text = picked.data['address'] ?? '';
+    _scannedMemo = null;
     setState(() {
       _cryptoMode = true;
       _token = token;
@@ -246,6 +258,57 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
         qty > 0 &&
         _amountError == null &&
         !_submitting;
+  }
+
+  Future<void> _scanAddress() async {
+    FocusScope.of(context).unfocus();
+    final payload = await QrScannerScreen.open(context);
+    if (payload == null || !mounted) return;
+
+    String? mismatch;
+    setState(() {
+      _addressController.text = payload.address;
+      _scannedMemo = payload.memo;
+
+      final symbol = payload.coinSymbol;
+      if (symbol != null && _coinOnlySchemes.contains(symbol)) {
+        final token = _token;
+        if (token == null) {
+          final coins = _options?.coins ?? const <WithdrawCoinOption>[];
+          final match = coins.where((c) => c.symbol.toLowerCase() == symbol).firstOrNull;
+          if (match != null && match.networks.isNotEmpty) {
+            _token = match;
+            _network = match.networks.length == 1 ? match.networks.first : null;
+          }
+        } else if (token.symbol.toLowerCase() != symbol) {
+          mismatch = 'This QR code is for a ${symbol.toUpperCase()} address, '
+              'but you picked ${token.symbol.toUpperCase()}.';
+        }
+      }
+
+      final amount = payload.amount;
+      if (amount != null && _qtyController.text.trim().isEmpty) {
+        _qtyController.text = amount;
+      }
+    });
+    _showSnack(mismatch ?? 'Address scanned — check it matches before sending.');
+  }
+
+  /// A heads-up when the address isn't shaped like one for the picked network
+  /// (e.g. a TRON "T…" address with BEP20 selected). Advisory only — the
+  /// format checks are heuristics, so it never blocks Continue.
+  String? get _addressWarning {
+    final network = _network;
+    final address = _addressController.text.trim();
+    if (network == null || address.length < 25) return null;
+    final family = networkFamily(network.code, network.label);
+    if (addressFitsFamily(address, family)) return null;
+    final looksLike = addressFamily(address);
+    return looksLike == AddressFamily.unknown
+        ? 'This doesn’t look like a ${network.label} address. '
+              'Check it carefully — sending on the wrong network can lose your funds.'
+        : 'This looks like a ${looksLike.label} address, not one for ${network.label}. '
+              'Sending on the wrong network can lose your funds.';
   }
 
   void _showSnack(String message) {
@@ -576,9 +639,30 @@ class _TransferCryptoScreenState extends State<TransferCryptoScreen> {
                         const SizedBox(height: 14),
                         _TextInput(
                           controller: _addressController,
-                          hint: 'Enter receiving wallet address',
-                          onChanged: (_) => setState(() {}),
+                          hint: 'Enter or scan wallet address',
+                          onChanged: (_) => setState(() => _scannedMemo = null),
+                          suffix: IconButton(
+                            tooltip: 'Scan QR code',
+                            onPressed: _scanAddress,
+                            icon: const Icon(
+                              Icons.qr_code_scanner_rounded,
+                              color: AppColors.primary,
+                            ),
+                          ),
                         ),
+                        if (_addressWarning case final warning?) ...[
+                          const SizedBox(height: 8),
+                          _Notice(text: warning, warning: true),
+                        ],
+                        if (_scannedMemo case final memo?) ...[
+                          const SizedBox(height: 8),
+                          _Notice(
+                            text: 'This QR code includes a memo/tag ($memo). Transfers from Crownex '
+                                'can’t include one yet — if the receiving exchange requires it, '
+                                'your funds may not arrive.',
+                            warning: true,
+                          ),
+                        ],
                         const SizedBox(height: 14),
                         _TextInput(
                           controller: _qtyController,
